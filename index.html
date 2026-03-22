@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RewindPPF — Facebook Marketplace Poster Generator</title>
+<style>
+/* ── RESET & BASE ── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#222;--surface3:#2a2a2a;
+  --border:#333;--border2:#444;
+  --text:#eee;--text2:#aaa;--text3:#666;
+  --accent:#E8B84B;--accent2:#FF2020;
+  --info-bg:#1a2a3a;--info:#60aaff;
+  --success-bg:#1a2e1a;--success:#44cc66;
+  --warn-bg:#2e2a1a;--warn:#ccaa44;
+  --danger-bg:#2e1a1a;--danger:#ff5544;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;min-height:100vh}
+h1{font-size:22px;font-weight:700;color:var(--accent)}
+h2{font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px}
+h3{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+a{color:var(--accent);text-decoration:none}
+
+/* ── LAYOUT ── */
+.app{display:grid;grid-template-columns:340px 1fr;gap:0;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:4px}
+.main{padding:16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;grid-column:1/-1}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.tab{padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;transition:all .15s}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none}.tab-content.on{display:block}
+
+/* ── SECTIONS ── */
+.section{margin-bottom:14px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sec-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+
+/* ── FORM ELEMENTS ── */
+label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text2);display:block;margin-bottom:3px}
+input[type=text],textarea,select{width:100%;font-size:12px;font-family:inherit;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:6px 9px;outline:none;transition:border-color .15s}
+input[type=text]:focus,textarea:focus,select:focus{border-color:var(--accent)}
+input[type=color]{height:28px;padding:2px 3px;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:var(--surface2);width:100%}
+textarea{resize:vertical;line-height:1.6;min-height:72px}
+select option{background:var(--surface2)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:6px}
+.fg{display:flex;flex-direction:column;gap:3px;margin-bottom:6px}
+
+/* ── BUTTONS ── */
+button{font-family:inherit;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;cursor:pointer;background:var(--surface2);color:var(--text);transition:all .15s}
+button:hover{background:var(--surface3);border-color:var(--border2)}
+button:active{transform:scale(.98)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#111;border-color:var(--accent);font-size:13px;padding:9px 20px;border-radius:var(--radius-lg)}
+.btn-primary:hover{opacity:.9;background:var(--accent)}
+.btn-danger{color:var(--danger);border-color:var(--danger);background:transparent;font-size:10px;padding:3px 8px}
+.btn-danger:hover{background:var(--danger-bg)}
+.btn-sm{font-size:10px;padding:3px 8px}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+
+/* ── PILLS ── */
+.pills{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.pill{font-size:10px;padding:3px 9px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;white-space:nowrap;user-select:none}
+.pill:hover{border-color:var(--border2)}
+.pill.on{background:var(--surface3);color:var(--text);border-color:var(--accent)}
+.stag{font-size:10px;padding:2px 8px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2)}
+.stag:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── RANGE SLIDER ── */
+.range-row{display:flex;gap:8px;align-items:center;margin-bottom:5px}
+.range-row label{white-space:nowrap;margin:0;min-width:90px;font-size:10px}
+.range-row input[type=range]{flex:1;accent-color:var(--accent)}
+.range-row span{font-size:10px;color:var(--text2);min-width:30px;text-align:right}
+
+/* ── PALETTE CARDS ── */
+.pal-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.pal-card{border:2px solid var(--border);border-radius:var(--radius-lg);cursor:pointer;overflow:hidden;transition:border-color .15s}
+.pal-card:hover{border-color:var(--border2)}
+.pal-card.on{border-color:var(--accent)}
+.pal-swatches{display:flex;height:36px}
+.pal-swatch{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:1px}
+.pal-swatch .hex{font-size:7px;font-weight:700;line-height:1;text-align:center}
+.pal-swatch .sname{font-size:6px;line-height:1;text-align:center;opacity:.7}
+.pal-name{font-size:9px;font-weight:600;color:var(--text2);padding:2px 5px;text-align:center;background:var(--surface)}
+
+/* ── OVERLAY GRID ── */
+.ov-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-bottom:6px}
+.ov-item{border:1px solid var(--border);border-radius:6px;padding:4px 2px;text-align:center;cursor:pointer;font-size:9px;color:var(--text2);background:var(--surface2);line-height:1.3;user-select:none;transition:all .15s}
+.ov-item:hover{border-color:var(--border2)}
+.ov-item.on{background:var(--surface3);color:var(--text);border-color:var(--accent)}
+.ov-icon{font-size:12px;display:block;margin-bottom:1px}
+
+/* ── FRAME GRID ── */
+.fr-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px}
+.fr-item{border:1px solid var(--border);border-radius:var(--radius);padding:6px 7px;background:var(--surface2)}
+.fr-item.on{border-color:var(--border2)}
+.fr-name{font-weight:600;color:var(--text);margin-bottom:4px;font-size:10px}
+.fr-cr{display:flex;gap:5px;align-items:center;margin-bottom:4px}
+.fr-cr label{margin:0;font-size:9px}
+.fr-sides{display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+.fr-sides button{font-size:9px;padding:3px 2px;border-radius:4px}
+.fr-sides button.on{background:var(--accent);color:#111;border-color:var(--accent)}
+.fr-src{font-size:8px;padding:1px 5px;border-radius:4px;background:var(--info-bg);color:var(--info)}
+.fr-src.manual{background:var(--warn-bg);color:var(--warn)}
+
+/* ── TEXT STYLE GRID ── */
+.ts-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-bottom:6px}
+.ts-item{border:1px solid var(--border);border-radius:6px;padding:4px 2px;text-align:center;cursor:pointer;font-size:9px;color:var(--text2);background:var(--surface2);user-select:none;transition:all .15s;line-height:1.3}
+.ts-item.on{background:var(--surface3);color:var(--text);border-color:var(--accent)}
+
+/* ── CTA GRID ── */
+.cta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:6px}
+.cta-item{border:1px solid var(--border);border-radius:6px;padding:4px;text-align:center;cursor:pointer;font-size:9px;color:var(--text2);background:var(--surface2);user-select:none;transition:all .15s}
+.cta-item.on{background:var(--surface3);color:var(--text);border-color:var(--accent)}
+
+/* ── COLOUR GRID ── */
+.color-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px}
+.color-item{display:flex;flex-direction:column;gap:2px}
+.color-item label{font-size:9px;text-align:center}
+
+/* ── CANVAS / PREVIEW ── */
+.canvas-wrap{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:#111}
+.canvas-wrap canvas{display:block;width:100%}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone{border:1.5px dashed var(--border);border-radius:var(--radius-lg);padding:12px;text-align:center;cursor:pointer;color:var(--text2);font-size:12px;position:relative;overflow:hidden;margin-bottom:6px;transition:border-color .15s}
+.upload-zone:hover{border-color:var(--accent)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+
+/* ── SIDE TOG ── */
+.side-tog{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:fit-content}
+.side-tog button{border:none;border-radius:0;padding:5px 14px;font-size:11px;background:var(--surface2);color:var(--text2)}
+.side-tog button.on{background:var(--surface3);color:var(--text)}
+
+/* ── STATUS ── */
+.status{font-size:11px;padding:8px 12px;border-radius:var(--radius);margin-bottom:8px;display:none}
+.status.show{display:block}
+.status.info{background:var(--info-bg);color:var(--info)}
+.status.success{background:var(--success-bg);color:var(--success)}
+.status.warn{background:var(--warn-bg);color:var(--warn)}
+.status.err{background:var(--danger-bg);color:var(--danger)}
+
+/* ── BG REMOVER ── */
+.preview-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.preview-box{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:repeating-conic-gradient(#444 0% 25%,#333 0% 50%) 0 0/16px 16px;min-height:120px;display:flex;align-items:center;justify-content:center}
+.preview-box canvas{max-width:100%;max-height:180px;display:block;object-fit:contain}
+.preview-label{font-size:9px;color:var(--text2);text-align:center;padding:3px;background:var(--surface)}
+.method-tabs{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:8px}
+.method-tabs button{border:none;border-radius:0;padding:5px 12px;font-size:11px;background:var(--surface2);color:var(--text2);flex:1}
+.method-tabs button.on{background:var(--surface3);color:var(--text)}
+.steps{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+.step{font-size:10px;padding:3px 9px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.step.active{background:var(--surface3);color:var(--text);border-color:var(--accent)}
+.step.done{background:var(--success-bg);color:var(--success);border-color:currentColor}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .topbar{grid-column:1}
+  .sidebar{max-height:50vh}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>
+    <h1>RewindPPF</h1>
+    <div style="font-size:11px;color:var(--text2);margin-top:1px">Facebook Marketplace Poster Generator</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span style="font-size:10px;color:var(--text3)">Calgary, AB · Auto Detailing</span>
+    <a href="https://github.com" target="_blank" style="font-size:10px;color:var(--text2);border:1px solid var(--border);padding:3px 8px;border-radius:6px">⭐ Star on GitHub</a>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="tabs">
+    <button class="tab on" onclick="switchTab('poster')">🖼️ Poster</button>
+    <button class="tab" onclick="switchTab('bgremove')">✂️ BG Remove</button>
+  </div>
+
+  <!-- ════ POSTER TAB ════ -->
+  <div class="tab-content on" id="tab-poster">
+
+    <!-- Photo -->
+    <div class="section">
+      <h3>📷 Background Photo</h3>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" accept="image/*" onchange="loadBg(this)">
+        <span id="bg-lbl">Tap to upload car / job photo</span>
+      </div>
+      <div class="range-row"><label>Brightness</label><input type="range" id="bg-bright" min="60" max="160" value="110" oninput="draw()"><span id="bb-val">110%</span></div>
+    </div>
+
+    <!-- Palette -->
+    <div class="section">
+      <div class="section-header">
+        <h3>🎨 Colour Palette</h3>
+        <button class="btn-danger btn-sm" onclick="resetPalette()">↺</button>
+      </div>
+      <div class="pal-grid" id="pal-grid"></div>
+    </div>
+
+    <!-- Title -->
+    <div class="section">
+      <div class="section-header"><h3>Title</h3><button class="btn-danger btn-sm" onclick="resetTitle()">↺</button></div>
+      <div class="g2">
+        <div class="fg"><label>Line 1</label><input id="line1" value="PREMIUM" oninput="draw()"></div>
+        <div class="fg"><label>Line 2</label><input id="line2" value="VINYL WRAP" oninput="draw()"></div>
+      </div>
+      <div class="pills" id="title-pills"></div>
+      <div class="range-row"><label>Letter Spacing</label><input type="range" id="title-spacing" min="0" max="30" value="0" oninput="draw()"><span id="sp-val">0px</span></div>
+    </div>
+
+    <!-- Tagline -->
+    <div class="section">
+      <div class="section-header"><h3>Tagline</h3><button class="btn-danger btn-sm" onclick="resetTagline()">↺</button></div>
+      <div class="fg"><label>Text</label><input id="tagline" value="Transform Your Vehicle. Protect the Original Paint." oninput="draw()"></div>
+      <div class="fg"><label>Quick Preset</label>
+        <select id="tagline-sel" onchange="if(this.value){document.getElementById('tagline').value=this.value;draw();}this.value=''">
+          <option value="">— select preset —</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="section">
+      <div class="section-header"><h3>Description <span style="font-size:9px;color:var(--text3)">**word** = bold</span></h3><button class="btn-danger btn-sm" onclick="resetDesc()">↺</button></div>
+      <div class="fg"><label>Custom (one per line · max 3)</label>
+        <textarea id="desc" oninput="draw()">**Full Vehicle** or Partial Wrap — Hood, Roof, Mirrors
+**Gloss / Matte / Satin** Finishes Available
+**Carbon Fiber** & Custom Colour Matching</textarea>
+      </div>
+      <div class="fg"><label>Preset per service</label>
+        <select id="desc-sel" onchange="pickDesc(this.value)">
+          <option value="">— select preset —</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Shop -->
+    <div class="g2">
+      <div class="fg"><label>Shop Name</label><input id="shop" value="RewindPPF" oninput="draw()"></div>
+      <div class="fg"><label>Location</label><input id="location" value="Calgary, AB" oninput="draw()"></div>
+    </div>
+
+    <!-- Text side -->
+    <div class="section">
+      <div class="section-header"><h3>Text Position</h3><button class="btn-danger btn-sm" onclick="setTextSide('left')">↺</button></div>
+      <div class="side-tog" id="side-tog">
+        <button class="on" onclick="setTextSide('left')">◀ Left</button>
+        <button onclick="setTextSide('right')">Right ▶</button>
+      </div>
+    </div>
+
+    <!-- Text colours -->
+    <div class="section">
+      <div class="section-header"><h3>Text Colours</h3><button class="btn-danger btn-sm" onclick="resetTextColors()">↺</button></div>
+      <div class="color-grid">
+        <div class="color-item"><label>Title</label><input type="color" id="c-title" value="#ffffff" oninput="draw()"></div>
+        <div class="color-item"><label>Tagline</label><input type="color" id="c-tagline" value="#f0f0f0" oninput="draw()"></div>
+        <div class="color-item"><label>Bullets</label><input type="color" id="c-bullets" value="#e8e8e8" oninput="draw()"></div>
+        <div class="color-item"><label>Bold</label><input type="color" id="c-bold" value="#E8B84B" oninput="draw()"></div>
+        <div class="color-item"><label>CTA</label><input type="color" id="c-cta" value="#E8B84B" oninput="draw()"></div>
+      </div>
+      <div class="range-row"><label>Shadow Blur</label><input type="range" id="txt-shadow" min="0" max="40" value="20" oninput="draw()"><span id="tsh-val">20</span></div>
+      <div class="range-row"><label>Outline Width</label><input type="range" id="txt-outline" min="0" max="8" value="0" oninput="draw()"><span id="tol-val">0</span></div>
+      <div class="g2"><div class="fg"><label>Outline Colour</label><input type="color" id="c-outline" value="#000000" oninput="draw()"></div></div>
+    </div>
+
+    <!-- Text style -->
+    <div class="section">
+      <div class="section-header"><h3>Text Style</h3><button class="btn-danger btn-sm" onclick="resetTextStyle()">↺</button></div>
+      <div class="ts-grid" id="ts-grid"></div>
+    </div>
+
+    <!-- CTA -->
+    <div class="section">
+      <div class="section-header"><h3>CTA Button Style</h3><button class="btn-danger btn-sm" onclick="resetCTA()">↺</button></div>
+      <div class="cta-grid" id="cta-grid"></div>
+    </div>
+
+    <!-- Accent -->
+    <div class="section">
+      <div class="section-header"><h3>Accent Colour</h3><button class="btn-danger btn-sm" onclick="setAcc('red')">↺</button></div>
+      <div class="pills" id="acc-pills">
+        <span class="pill on" onclick="setAcc('red')" id="ac-red">🔴 Red</span>
+        <span class="pill" onclick="setAcc('gold')" id="ac-gold">🟡 Gold</span>
+        <span class="pill" onclick="setAcc('blue')" id="ac-blue">🔵 Blue</span>
+        <span class="pill" onclick="setAcc('green')" id="ac-green">🟢 Green</span>
+        <span class="pill" onclick="setAcc('cyan')" id="ac-cyan">🩵 Cyan</span>
+        <span class="pill" onclick="setAcc('white')" id="ac-white">⚪ White</span>
+        <span class="pill" onclick="setAcc('orange')" id="ac-orange">🟠 Orange</span>
+        <span class="pill" onclick="setAcc('purple')" id="ac-purple">🟣 Purple</span>
+        <span class="pill" onclick="setAcc('pink')" id="ac-pink">🩷 Pink</span>
+        <span class="pill" onclick="setAcc('lime')" id="ac-lime">💚 Lime</span>
+      </div>
+      <div class="fg"><label>Custom</label><input type="color" id="c-accent" value="#FF2020" oninput="setAccCustom()"></div>
+    </div>
+
+    <!-- Overlays -->
+    <div class="section">
+      <div class="section-header"><h3>Overlay Layers <span style="font-size:9px;color:var(--text3)">multi-select</span></h3><button class="btn-danger btn-sm" onclick="resetOverlays()">↺</button></div>
+      <div class="ov-grid" id="ov-grid"></div>
+      <div class="range-row"><label>Darkness</label><input type="range" id="ov-int" min="0" max="100" value="55" oninput="draw()"><span id="ov-val">55%</span></div>
+    </div>
+
+    <!-- Frames -->
+    <div class="section">
+      <div class="section-header"><h3>Frame & Deco <span style="font-size:9px;color:var(--text3)">T R B L</span></h3><button class="btn-danger btn-sm" onclick="resetFrames()">↺</button></div>
+      <p style="font-size:10px;color:var(--text3);margin-bottom:6px">Colours follow active palette. Use picker to override per frame.</p>
+      <div class="fr-grid" id="fr-grid"></div>
+    </div>
+
+    <button class="btn-danger" onclick="resetAll()" style="width:100%;margin-top:4px">↺ Reset All</button>
+
+  </div><!-- /poster tab -->
+
+  <!-- ════ BG REMOVE TAB ════ -->
+  <div class="tab-content" id="tab-bgremove">
+    <h3 style="margin-bottom:6px">✂️ Background Remover</h3>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Upload a car photo and remove the background — 100% free, works offline, no AI needed.</p>
+
+    <div class="steps">
+      <div class="step active" id="br-step1">① Upload</div>
+      <div class="step" id="br-step2">② Remove BG</div>
+      <div class="step" id="br-step3">③ Use in Poster</div>
+    </div>
+
+    <div class="upload-zone" id="br-upload">
+      <input type="file" accept="image/*" id="br-input" onchange="brLoad(this)">
+      <div>📷 Tap to upload car photo</div>
+      <div style="font-size:10px;margin-top:3px;opacity:.5">JPG · PNG · WEBP</div>
+    </div>
+
+    <div id="br-controls" style="display:none">
+      <div class="method-tabs">
+        <button class="on" onclick="brSetMethod('color')" id="brm-color">🎨 Colour</button>
+        <button onclick="brSetMethod('edge')" id="brm-edge">✂️ Edge Cut</button>
+      </div>
+
+      <div id="br-opts-color">
+        <div id="br-click-hint" style="font-size:10px;color:var(--info);background:var(--info-bg);padding:6px 9px;border-radius:6px;margin-bottom:6px">
+          👆 Click on a background area in the Original preview to sample its colour
+        </div>
+        <div class="range-row"><label>Colour Tolerance</label><input type="range" id="br-tol" min="5" max="120" value="40" oninput="brUpdatePreview()"><span id="br-tol-val">40</span></div>
+        <div class="range-row"><label>Edge Feather</label><input type="range" id="br-feather" min="0" max="15" value="3" oninput="brUpdatePreview()"><span id="br-feath-val">3px</span></div>
+      </div>
+
+      <div id="br-opts-edge" style="display:none">
+        <div class="range-row"><label>Edge Sensitivity</label><input type="range" id="br-sens" min="5" max="80" value="30" oninput="brUpdatePreview()"><span id="br-sens-val">30</span></div>
+        <div class="range-row"><label>Edge Feather</label><input type="range" id="br-efeather" min="0" max="20" value="6" oninput="brUpdatePreview()"><span id="br-efeath-val">6px</span></div>
+      </div>
+
+      <div class="preview-row">
+        <div>
+          <div class="preview-label">Original</div>
+          <div class="preview-box"><canvas id="br-orig"></canvas></div>
+        </div>
+        <div>
+          <div class="preview-label">Result</div>
+          <div class="preview-box"><canvas id="br-result"></canvas></div>
+        </div>
+      </div>
+
+      <div class="status" id="br-status"></div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="br-remove-btn" onclick="brRemove()" style="font-size:12px;padding:7px 16px">✂️ Remove Background</button>
+        <button onclick="brReset()">↺ Reset</button>
+      </div>
+      <div id="br-after-btns" style="display:none">
+        <div class="btn-row" style="margin-top:4px">
+          <button onclick="brUseInPoster()" style="background:var(--success-bg);color:var(--success);border-color:var(--success)">✅ Use in Poster</button>
+          <button onclick="brDownload()">⬇ Download PNG</button>
+        </div>
+      </div>
+    </div>
+    <canvas id="br-work" style="display:none"></canvas>
+  </div><!-- /bgremove tab -->
+
+</div><!-- /sidebar -->
+
+<!-- MAIN AREA -->
+<div class="main">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <h2 style="margin:0">Preview <span style="font-size:11px;color:var(--text3);font-weight:400">1200 × 900px</span></h2>
+    <div class="btn-row" style="margin:0">
+      <button class="btn-primary" id="dl-btn" onclick="dlImg()">⬇ Download PNG</button>
+      <button onclick="cpyCap()">📋 Copy Caption</button>
+    </div>
+  </div>
+  <div class="canvas-wrap"><canvas id="cv" width="1200" height="900"></canvas></div>
+  <p style="font-size:10px;color:var(--text3)">1200×900 landscape — Facebook Marketplace ready. All processing is local — no data is sent anywhere.</p>
+
+  <!-- GitHub setup instructions -->
+  <details style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;background:var(--surface)">
+    <summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--accent)">📦 How to deploy this to GitHub Pages (free hosting)</summary>
+    <div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.8">
+      <ol style="margin-left:16px">
+        <li>Go to <a href="https://github.com" target="_blank">github.com</a> and create a free account</li>
+        <li>Click <b>New repository</b> → name it <code style="background:var(--surface2);padding:1px 5px;border-radius:4px">rewindppf</code> → Public → Create</li>
+        <li>Click <b>Add file → Upload files</b> → drag this <code>index.html</code> file → Commit changes</li>
+        <li>Go to <b>Settings → Pages → Source: Deploy from branch → main → / (root)</b> → Save</li>
+        <li>Wait ~1 min → Your app is live at <code style="background:var(--surface2);padding:1px 5px;border-radius:4px">yourusername.github.io/rewindppf</code></li>
+      </ol>
+      <p style="margin-top:8px;color:var(--text3)">✅ Free forever · ✅ No server needed · ✅ Automatic HTTPS · ✅ Custom domain supported</p>
+    </div>
+  </details>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════
+const PALETTES=[
+  {id:'auto_dark',name:'Auto Dark',sw:['#1A1A1A','#FF2020','#E8B84B','#FFFFFF','#222222'],sn:['Graphite','Scarlet','Amber','White','Carbon'],t:'#fff',tl:'#f0f0f0',bl:'#e8e8e8',bo:'#FF2020',cta:'#FF2020',ac:'#FF2020'},
+  {id:'gold_black',name:'Gold & Black',sw:['#111111','#222222','#E8B84B','#FFF5D6','#D4940A'],sn:['Obsidian','Onyx','Gold','Cream','Bronze'],t:'#fff',tl:'#F5E6C0',bl:'#EEE0B0',bo:'#E8B84B',cta:'#E8B84B',ac:'#E8B84B'},
+  {id:'steel_blue',name:'Steel Blue',sw:['#0A1628','#162440','#3A8FFF','#C8DCFF','#0055DD'],sn:['Navy','Cobalt','Sky','Mist','Royal'],t:'#fff',tl:'#C8DCFF',bl:'#B0CCFF',bo:'#3A8FFF',cta:'#3A8FFF',ac:'#3A8FFF'},
+  {id:'carbon_red',name:'Carbon Red',sw:['#111111','#1C1C1C','#FF4444','#EEEEEE','#CC0000'],sn:['Carbon','Charcoal','Red','Silver','Deep Red'],t:'#eee',tl:'#ddd',bl:'#ccc',bo:'#FF4444',cta:'#FF4444',ac:'#FF4444'},
+  {id:'midnight',name:'Midnight',sw:['#040816','#0A1230','#00DFFF','#B0EEFF','#007AAA'],sn:['Abyss','Navy','Cyan','Ice','Ocean'],t:'#fff',tl:'#B0EEFF',bl:'#90DDFF',bo:'#00DFFF',cta:'#00DFFF',ac:'#00DFFF'},
+  {id:'forest',name:'Forest',sw:['#0A1A0A','#122012','#00E070','#AAFFBB','#007744'],sn:['Moss','Pine','Lime','Mint','Fern'],t:'#efffee',tl:'#C0FFCC',bl:'#AAFFBB',bo:'#00E070',cta:'#00E070',ac:'#00E070'},
+  {id:'chrome',name:'Chrome',sw:['#1A1A1A','#2E2E2E','#CCCCCC','#FFFFFF','#888888'],sn:['Iron','Steel','Silver','White','Smoke'],t:'#fff',tl:'#ddd',bl:'#ccc',bo:'#CCCCCC',cta:'#FFF',ac:'#CCCCCC'},
+  {id:'fire',name:'Fire',sw:['#100500','#1E0800','#FF7700','#FFE0B0','#FF3300'],sn:['Ash','Ember','Blaze','Glow','Flame'],t:'#FFE0B0',tl:'#FFCC88',bl:'#FFBB66',bo:'#FF7700',cta:'#FF7700',ac:'#FF7700'},
+  {id:'neon_purple',name:'Neon Purple',sw:['#0D000D','#180018','#AA44FF','#DDB0FF','#6600CC'],sn:['Void','Shadow','Neon','Lilac','Grape'],t:'#fff',tl:'#DDB0FF',bl:'#CC99FF',bo:'#AA44FF',cta:'#AA44FF',ac:'#AA44FF'},
+  {id:'white_clean',name:'Clean White',sw:['#F5F5F5','#EEEEEE','#222222','#000000','#777777'],sn:['Pearl','Ivory','Ink','Black','Slate'],t:'#111',tl:'#333',bl:'#444',bo:'#111',cta:'#222',ac:'#222222'},
+  {id:'rose_gold',name:'Rose Gold',sw:['#1A0A0A','#2A1010','#FF44AA','#FFD0E8','#CC2277'],sn:['Bordeaux','Wine','Rose','Blush','Fuchsia'],t:'#FFD0E8',tl:'#FFBBDD',bl:'#FF99CC',bo:'#FF44AA',cta:'#FF44AA',ac:'#FF44AA'},
+  {id:'lime_dark',name:'Lime Dark',sw:['#080F00','#101800','#AAFF00','#EEFFCC','#669900'],sn:['Pitch','Jungle','Acid','Citrus','Olive'],t:'#eeffcc',tl:'#CCFF88',bl:'#BBFF66',bo:'#AAFF00',cta:'#AAFF00',ac:'#AAFF00'},
+  {id:'ice_silver',name:'Ice Silver',sw:['#0A0F14','#151E28','#A8C8E8','#E8F4FF','#4488BB'],sn:['Storm','Slate','Ice','Frost','Arctic'],t:'#fff',tl:'#D0E8FF',bl:'#B8D8FF',bo:'#A8C8E8',cta:'#A8C8E8',ac:'#A8C8E8'},
+  {id:'crimson',name:'Crimson',sw:['#0D0005','#1A000A','#CC0033','#FFD0D8','#880022'],sn:['Noir','Burgundy','Crimson','Blush','Blood'],t:'#FFD0D8',tl:'#FFAABB',bl:'#FF8899',bo:'#CC0033',cta:'#CC0033',ac:'#CC0033'},
+  {id:'electric',name:'Electric',sw:['#000A0D','#001020','#00FFD0','#AFFFEE','#00AA88'],sn:['Void','Deep Sea','Electric','Aqua','Teal'],t:'#fff',tl:'#AFFFEE',bl:'#88FFDD',bo:'#00FFD0',cta:'#00FFD0',ac:'#00FFD0'},
+  {id:'desert',name:'Desert Sand',sw:['#1A1008','#2A1A0A','#D4A055','#F5E8CC','#8B6030'],sn:['Dusk','Sienna','Sand','Parchment','Walnut'],t:'#F5E8CC',tl:'#EDD8A8',bl:'#E0C888',bo:'#D4A055',cta:'#D4A055',ac:'#D4A055'},
+  {id:'deep_space',name:'Deep Space',sw:['#00001A','#000030','#6644FF','#C8B8FF','#3322AA'],sn:['Black Hole','Cosmos','Nebula','Stardust','Galaxy'],t:'#C8B8FF',tl:'#AA88FF',bl:'#9977FF',bo:'#6644FF',cta:'#6644FF',ac:'#6644FF'},
+  {id:'racing_green',name:'Racing Green',sw:['#001005','#002010','#007744','#AAFFCC','#004422'],sn:['Pit Black','Paddock','British','Spearmint','Forest'],t:'#AAFFCC',tl:'#88FFAA',bl:'#66FF88',bo:'#007744',cta:'#00AA55',ac:'#007744'},
+  {id:'titanium',name:'Titanium',sw:['#111214','#1C1F22','#8899AA','#E8EEF4','#445566'],sn:['Matte','Gunmetal','Titanium','Platinum','Slate'],t:'#E8EEF4',tl:'#CDD8E0',bl:'#B8C8D4',bo:'#8899AA',cta:'#AABBCC',ac:'#8899AA'},
+  {id:'sunset',name:'Sunset',sw:['#0A0508','#1A0A10','#FF6644','#FFE0CC','#CC3322'],sn:['Dusk','Twilight','Coral','Peach','Ember'],t:'#FFE0CC',tl:'#FFCCAA',bl:'#FFBB88',bo:'#FF6644',cta:'#FF6644',ac:'#FF6644'},
+];
+const FRAME_PAL_ROLE={stripe:2,dashes:2,dots:3,diamonds:3,corners:2,brackets:3,hexgrid:2,scanlines:3,border:2,lines:4};
+const ACCS={red:'#FF2020',gold:'#E8B84B',blue:'#3A8FFF',green:'#00E070',cyan:'#00DFFF',white:'#FFFFFF',orange:'#FF7700',purple:'#AA44FF',pink:'#FF44AA',lime:'#AAFF00'};
+const OVS=[{id:'vign',icon:'🔘',label:'Vignette'},{id:'top',icon:'⬆️',label:'Dark Top'},{id:'bottom',icon:'⬇️',label:'Dark Btm'},{id:'left',icon:'◀️',label:'Dark Left'},{id:'right',icon:'▶️',label:'Dark Right'},{id:'diag_r',icon:'↗️',label:'Diag Right'},{id:'diag_l',icon:'↖️',label:'Diag Left'},{id:'center',icon:'🔲',label:'Ctr Fade'},{id:'full',icon:'⬛',label:'Full Tint'},{id:'cinematic',icon:'🎬',label:'Cinematic'},{id:'duotone',icon:'🎨',label:'Duotone'},{id:'film',icon:'📽️',label:'Film Grain'},{id:'haze',icon:'🌫️',label:'Haze'},{id:'spotlight',icon:'💡',label:'Spotlight'},{id:'golden',icon:'🌅',label:'Golden Hr'},{id:'neon',icon:'🌈',label:'Neon Glow'},{id:'noir',icon:'🌑',label:'Noir B&W'},{id:'chrome_ov',icon:'🪞',label:'Chrome'},{id:'double_exp',icon:'✨',label:'Double Exp'},{id:'glitch',icon:'⚡',label:'Glitch'}];
+const FRAMES=[{id:'stripe',name:'Accent Stripe',defColor:'#FF2020'},{id:'dashes',name:'Side Dashes',defColor:'#FF2020'},{id:'dots',name:'Dot Grid',defColor:'#E8B84B'},{id:'diamonds',name:'Diamonds',defColor:'#ffffff'},{id:'corners',name:'Corner Marks',defColor:'#E8B84B'},{id:'brackets',name:'Brackets',defColor:'#ffffff'},{id:'hexgrid',name:'Hex Grid',defColor:'#3A8FFF'},{id:'scanlines',name:'Scan Lines',defColor:'#ffffff'},{id:'border',name:'Full Border',defColor:'#E8B84B'},{id:'lines',name:'Speed Lines',defColor:'#FF2020'}];
+const TEXT_STYLES=[{id:'normal',label:'Normal'},{id:'italic',label:'Italic'},{id:'glow',label:'Glow'},{id:'outline',label:'Outline'},{id:'shadow_l',label:'Shad L'},{id:'shadow_r',label:'Shad R'},{id:'stamp',label:'Stamp'},{id:'neon_txt',label:'Neon'},{id:'emboss',label:'Emboss'},{id:'ghost',label:'Ghost'},{id:'retro',label:'Retro'},{id:'military',label:'Stencil'}];
+const CTA_STYLES=[{id:'solid_pill',label:'Solid Pill'},{id:'gradient_btn',label:'Gradient'},{id:'outline_pill',label:'Outline Pill'},{id:'flat_bar',label:'Flat Bar'},{id:'tag_badge',label:'Tag Badge'},{id:'sharp_box',label:'Sharp Box'},{id:'double_line',label:'Double Line'},{id:'text_only',label:'Text Only'}];
+const TITLE_PRESETS=[['PREMIUM','VINYL WRAP'],['PAINT PROTECTION','FILM (PPF)'],['CERAMIC','COATING'],['CHROME','DELETE'],['HEADLIGHT','RESTORATION'],['ROOF','BLACKOUT'],['UNDERCOATING','SERVICE'],['POLISH &','DETAILING']];
+const TITLE_TO_KEY={'VINYL WRAP':'vinyl','FILM (PPF)':'ppf','COATING':'ceramic','DELETE':'chrome','RESTORATION':'headlight','BLACKOUT':'roof','SERVICE':'undercoat','DETAILING':'polish'};
+const TAGLINES={default:['Transform Your Vehicle. Protect the Original Paint.','Your Car Deserves the Best Protection.','Style Meets Protection.','Built to Last. Designed to Impress.',"Calgary's #1 Auto Protection Specialists.",'Drive Bold. Stay Protected.','Premium Finish. Lasting Shield.','Protect Your Investment. Enhance Your Style.'],vinyl:['Wrap It. Own It. Turn Every Head.','Your Colour. Your Style. Your Way.','A New Look Without Touching the Paint.','Limitless Colours. Zero Compromises.','Change Your Look. Keep Your Value.'],ppf:['Invisible Armour for Your Investment.','Protect What Matters. Drive with Confidence.','Self-Healing Technology for Lasting Clarity.','The Last Line of Defence Against Road Damage.','Your Paint Stays Perfect. Every Mile.'],ceramic:['Liquid Glass Protection That Lasts Years.','One Coat. Years of Showroom Shine.','Repel Dirt. Reflect Light. Look Incredible.'],chrome:['Go Dark. Go Stealthy. Go Bold.','Delete the Chrome. Define Your Look.','The Stealth Upgrade Every Car Deserves.'],headlight:['See Clearly. Drive Safely. Look Sharp.',"Bring Back the Clarity You've Been Missing.",'Crystal-Clear Headlights. Safer Night Driving.'],roof:['Blackout the Roof. Level Up the Look.','Two-Tone Contrast That Speaks Volumes.','A Bold Upgrade That Turns Heads.'],undercoat:['Protect from the Ground Up.',"Calgary Winters Are Tough. Your Car Shouldn't Suffer.",'Silence the Road. Shield the Steel.'],polish:['From Swirled to Showroom in One Session.',"Reveal the Paint That's Been Hiding.",'Machine Precision. Mirror Results.']};
+const DESCS={vinyl:['**Full Vehicle** or Partial Wrap — Hood, Roof, Mirrors\n**Gloss / Matte / Satin** Finishes Available\n**Carbon Fiber** & Custom Colour Matching','**3M & Avery Dennison** Premium Vinyl Films Used\n**Colour Change** Without Permanent Paint Alteration\n**Protects OEM Paint** While Looking Incredible','**Partial Wraps** for Hood, Roof, Pillars & Mirrors\n**Custom Designs** and Two-Tone Colour Splits\n**Removable** — Revert to Stock Anytime','**Racing Stripes** & Graphic Kits Available\n**Chrome Delete** Vinyl Packages Included\n**Any Colour** from 3M, Avery & Oracal Range','**Commercial Vehicle** Branding & Fleet Wraps\n**Digital Print** Custom Graphics Available\n**Professional Installation** — Bubble & Crease Free'],ppf:['**Paint Protection Film** — TPU Self-Healing Technology\n**Full Front** or Full Body Coverage Available\n**Crystal Clear** or Matte Stealth Finish','**XPEL & 3M** Premium Paint Protection Film\n**Stops Rock Chips**, Scratches & Road Debris\n**10-Year Warranty** on Film & Installation','**Self-Healing TPU** Film — Removes Light Scratches\n**Maintains Resale Value** — Invisible Protection\n**UV Stable** — Will Not Yellow Over Time','**Partial Coverage** Kits for High-Impact Areas\n**Pre-Cut Computer Patterns** for Perfect Fit\n**Glossy or Stealth Matte** — Your Choice','**Track Pack** Full Front + Mirrors + Rockers\n**Optical Clarity** — Invisible When Installed\n**Protects OEM Paint** for the Life of the Car'],ceramic:['**Nano-Ceramic** Coating — Up to 5-Year Protection\n**Hydrophobic** Surface — Water & Dirt Repellent\n**Mirror-Like Gloss** Finish on Every Panel','**9H Hardness** Ceramic — Scratch Resistant Surface\n**UV Protection** Prevents Fading & Oxidation\n**Easy to Clean** — Dirt Slides Right Off','**Professional Grade** Ceramic Coating Applied\n**Long-Term Shine** That Outlasts Any Wax\n**Ideal for New Cars** or Post-Paint-Correction','**Graphene Ceramic** Coating Option Available\n**Superior Hydrophobics** vs Standard Ceramic\n**Less Water Spotting** in Harsh Climates','**Ceramic on Glass**, Wheels & Trim Available\n**Full Exterior Package** for Complete Protection\n**Annual Maintenance** Plans Available'],chrome:['**Blackout** Chrome Trim & Badges — Stealth Look\n**Gloss or Matte** Black Vinyl — Fully Reversible\n**No Paint Damage** — OEM Finish Stays Intact','**Grille, Window Trim** & Door Handle Blackout\n**Mirror Caps & Badge** Delete Available\n**Clean, Minimal OEM+** Aesthetic','**Full Chrome Delete** Package — All Exterior Trim\n**Satin, Gloss or Matte** Black Finish Options\n**Fully Reversible** — No Commitment Required','**Colour-Matched Vinyl** Instead of Black Available\n**Brushed Metal** & Carbon Fibre Finishes Too\n**Computer-Cut Precision** — No Gaps or Bubbles','**Headlight & Taillight** Tint Add-On Available\n**Emblem Blackout** on All Makes & Models\n**Book Online** — Fast Turnaround Times'],headlight:['**Restore Clarity** on Yellowed / Hazy Headlights\n**Machine Polish** + UV Sealant for Lasting Results\n**TPU Film** Applied on Top for Extra Protection','**Multi-Stage** Wet Sand & Polish Restoration\n**UV-Resistant Sealant** to Prevent Re-Yellowing\n**Improves Night Visibility** and Road Safety','**Factory-Fresh Clarity** Restored in One Visit\n**Optional TPU Film** for Permanent Protection\n**Safer Night Driving** — See and Be Seen','**Same-Day Service** Available — Fast Turnaround\n**Fraction of the Cost** vs Headlight Replacement\n**All Vehicle Makes** & Models Welcome','**Before & After Photos** Provided Every Job\n**3-Stage Restoration** Process for Best Results\n**Recommended Every 2–3 Years** for Maintenance'],roof:['**Gloss or Matte** Black Vinyl Roof Wrap\n**Protects OEM Paint** — Fully Reversible\n**Clean Two-Tone** Contrast Look','**Panoramic Roof** & Pillars Included Available\n**Carbon Fibre Texture** Option Available\n**Removable** — No Permanent Modification','**Premium Vinyl** Roof Wrap — Custom Cut & Fit\n**Colour-Matched or Contrast** Options Available\n**Adds Value** to Any Vehicle Build','**Gloss Black, Satin or Matte** Finish Available\n**A-Pillar & B-Pillar** Blackout Included\n**Perfect for** BMW, Audi, Golf & More','**Roof + Chrome Delete Combo** Package Available\n**Complete Blackout Build** for a Premium Look\n**Ask About Our** Bundle Pricing'],undercoat:['**Rubberized** Undercoating for Rust Protection\n**Noise Dampening** — Quieter, Smoother Ride\n**Ideal for Calgary** Winter Road Conditions','**Full Underbody** Spray Coverage Applied\n**Prevents Corrosion** from Salt & Road Moisture\n**Long-Term Protection** That Pays for Itself','**Sound Deadening** Undercoat for Cabin Quiet\n**Anti-Rust Formula** — Winter-Grade Protection\n**Recommended for** All New & Used Vehicles','**Wheel Wells & Rockers** Included in Package\n**Chip-Resistant Coating** for High-Impact Areas\n**Dries Fast** — Same Day Return of Vehicle','**New Vehicle Special** — Apply Before First Winter\n**Used Vehicle Inspection** Included Free\n**10-Year Rust Warranty** on Premium Package'],polish:['**Machine Cut & Compound** Polish — Swirl Removal\n**Single or Dual Stage** Paint Correction\n**High-Gloss** Hand Wax Finish Included','**Removes Swirls**, Water Spots & Fine Scratches\n**Paint Thickness** Checked Before & After\n**Results That Look** Better Than Factory','**Full Paint Correction** + Ceramic Coating Option\n**Clay Bar Decontamination** Included\n**The Best Base** for Any Protection Package','**Engine Bay Detail** Add-On Available\n**Interior Deep Clean** Package Also Available\n**Show Car Prep** & Pre-Sale Detailing Offered','**Headlight Restoration** Included with Full Detail\n**Tar, Sap & Iron** Contamination Removal\n**Maintained Gloss** with Spray Sealant Finish'],general:["**PPF, Ceramic Coating** & Vinyl Wrapping\n**Chrome Delete**, Roof Blackout & Headlight Restore\n**Calgary's Premium** Auto Protection Studio","**Complete Protection** Packages Available\n**Custom Builds** Tailored to Your Vehicle\n**Book a Free Consultation** — No Obligation","**Serving Calgary** with Premium Auto Services\n**All Makes & Models** Welcome\n**DM Us Today** for a Custom Quote"]};
+
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+let acc='red',textSide='left',bgImg=null,activePalId=null;
+let activeOvs=new Set(['vign','bottom']);
+let activeTxtStyle='normal',activeCtaStyle='solid_pill';
+let frameState={};
+FRAMES.forEach(f=>{frameState[f.id]={sides:new Set(),manualColor:null};});
+
+// ════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════
+function getFrameColor(id){const fs=frameState[id];if(fs.manualColor)return fs.manualColor;if(activePalId){const p=PALETTES.find(x=>x.id===activePalId);if(p){const idx=FRAME_PAL_ROLE[id]??2;return p.sw[idx]||p.sw[2];}}return FRAMES.find(f=>f.id===id)?.defColor||'#FF2020';}
+function syncFramePickerUI(id){const c=getFrameColor(id);const inp=document.getElementById('frc-'+id);const src=document.getElementById('frsrc-'+id);if(inp)inp.value=c;if(src){const m=!!frameState[id].manualColor;src.textContent=m?'manual':'palette';src.className='fr-src'+(m?' manual':'');}}
+function switchTab(t){document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',['poster','bgremove'][i]===t));document.querySelectorAll('.tab-content').forEach((c,i)=>c.classList.toggle('on',['tab-poster','tab-bgremove'][i]==='tab-'+t));}
+function setStep(n,[s1,s2,s3]=[`br-step1`,`br-step2`,`br-step3`]){[s1,s2,s3].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.className='step'+(i+1<n?' done':i+1===n?' active':'');});}
+
+// ════════════════════════════════════════════════
+// INIT UI
+// ════════════════════════════════════════════════
+(function init(){
+  // Palettes
+  const pg=document.getElementById('pal-grid');
+  PALETTES.forEach(p=>{
+    const card=document.createElement('div');card.className='pal-card';card.id='pal-'+p.id;
+    const row=document.createElement('div');row.className='pal-swatches';
+    p.sw.forEach((c,i)=>{const sw=document.createElement('div');sw.className='pal-swatch';sw.style.background=c;const b=(parseInt(c.slice(1,3),16)*299+parseInt(c.slice(3,5),16)*587+parseInt(c.slice(5,7),16)*114)/1000;const tc=b>140?'#111':'#eee';sw.innerHTML=`<span class="hex" style="color:${tc}">${c.slice(1).toUpperCase()}</span><span class="sname" style="color:${tc}">${p.sn[i]}</span>`;row.appendChild(sw);});
+    const lbl=document.createElement('div');lbl.className='pal-name';lbl.textContent=p.name;
+    card.appendChild(row);card.appendChild(lbl);card.onclick=()=>applyPalette(p.id);
+    pg.appendChild(card);
+  });
+  // Title pills
+  const tc=document.getElementById('title-pills');
+  TITLE_PRESETS.forEach(([a,b])=>{const p=document.createElement('span');p.className='stag';p.textContent=a+' '+b;p.onclick=()=>{document.getElementById('line1').value=a;document.getElementById('line2').value=b;const key=TITLE_TO_KEY[b]||'general';updateTaglineSel(key);updateDescSel(key);draw();};tc.appendChild(p);});
+  updateTaglineSel('default');updateDescSel('vinyl');
+  // Overlays
+  const og=document.getElementById('ov-grid');
+  OVS.forEach(o=>{const d=document.createElement('div');d.className='ov-item'+(activeOvs.has(o.id)?' on':'');d.id='ov-'+o.id;d.innerHTML=`<span class="ov-icon">${o.icon}</span>${o.label}`;d.onclick=()=>{activeOvs.has(o.id)?activeOvs.delete(o.id):activeOvs.add(o.id);d.classList.toggle('on',activeOvs.has(o.id));draw();};og.appendChild(d);});
+  // Frames
+  const fg=document.getElementById('fr-grid');
+  FRAMES.forEach(f=>{const d=document.createElement('div');d.className='fr-item';d.id='fr-'+f.id;const ic=getFrameColor(f.id);d.innerHTML=`<div class="fr-name">${f.name}</div><div class="fr-cr"><label>Colour</label><input type="color" value="${ic}" id="frc-${f.id}" style="width:32px;height:20px;padding:1px 2px" oninput="onFrameColorManual('${f.id}',this.value)"><span id="frsrc-${f.id}" class="fr-src">default</span><button class="btn-sm" onclick="clearFrameManual('${f.id}')" title="Reset to palette" style="font-size:9px;padding:2px 5px">↺</button></div><div class="fr-sides"><button id="frs-T-${f.id}" onclick="toggleFS('${f.id}','T')">▲T</button><button id="frs-R-${f.id}" onclick="toggleFS('${f.id}','R')">▶R</button><button id="frs-B-${f.id}" onclick="toggleFS('${f.id}','B')">▼B</button><button id="frs-L-${f.id}" onclick="toggleFS('${f.id}','L')">◀L</button></div>`;fg.appendChild(d);});
+  // Text styles
+  const tsg=document.getElementById('ts-grid');
+  TEXT_STYLES.forEach(ts=>{const d=document.createElement('div');d.className='ts-item'+(ts.id===activeTxtStyle?' on':'');d.id='tsi-'+ts.id;d.innerHTML=`<span style="font-size:12px;display:block">Aa</span>${ts.label}`;d.onclick=()=>{activeTxtStyle=ts.id;document.querySelectorAll('.ts-item').forEach(x=>x.classList.remove('on'));d.classList.add('on');draw();};tsg.appendChild(d);});
+  // CTA
+  const cg=document.getElementById('cta-grid');
+  CTA_STYLES.forEach(cs=>{const d=document.createElement('div');d.className='cta-item'+(cs.id===activeCtaStyle?' on':'');d.id='ctai-'+cs.id;d.textContent=cs.label;d.onclick=()=>{activeCtaStyle=cs.id;document.querySelectorAll('.cta-item').forEach(x=>x.classList.remove('on'));d.classList.add('on');draw();};cg.appendChild(d);});
+  // Range sliders display update
+  [['bg-bright','bb-val','%'],['title-spacing','sp-val','px'],['txt-shadow','tsh-val',''],['txt-outline','tol-val',''],['ov-int','ov-val','%']].forEach(([id,vid,sfx])=>{const el=document.getElementById(id);if(el)el.addEventListener('input',()=>{document.getElementById(vid).textContent=el.value+sfx;});});
+  draw();
+})();
+
+function updateTaglineSel(key){const sel=document.getElementById('tagline-sel');sel.innerHTML='<option value="">— select preset —</option>';const list=[...(TAGLINES[key]||[]),...(key!=='default'?TAGLINES.default:[])];list.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t.length>44?t.slice(0,42)+'…':t;sel.appendChild(o);});}
+function updateDescSel(key){const sel=document.getElementById('desc-sel');sel.innerHTML='<option value="">— select preset —</option>';const list=DESCS[key]||DESCS.general;list.forEach((d,i)=>{const o=document.createElement('option');o.value=key+'||'+i;const clean=d.replace(/\*\*/g,'');o.textContent=(i+1)+'. '+clean.split('\n')[0].slice(0,30)+'…';sel.appendChild(o);});}
+function pickDesc(val){if(!val)return;const[key,idx]=val.split('||');const d=(DESCS[key]||DESCS.general)[parseInt(idx)];if(d){document.getElementById('desc').value=d;draw();}}
+
+function applyPalette(id){
+  const p=PALETTES.find(x=>x.id===id);if(!p)return;
+  activePalId=id;
+  document.querySelectorAll('.pal-card').forEach(x=>x.classList.remove('on'));
+  document.getElementById('pal-'+id)?.classList.add('on');
+  document.getElementById('c-title').value=p.t;document.getElementById('c-tagline').value=p.tl;
+  document.getElementById('c-bullets').value=p.bl;document.getElementById('c-bold').value=p.bo;
+  document.getElementById('c-cta').value=p.cta;document.getElementById('c-accent').value=p.ac;
+  acc='custom';document.querySelectorAll('#acc-pills .pill').forEach(x=>x.classList.remove('on'));
+  FRAMES.forEach(f=>{frameState[f.id].manualColor=null;syncFramePickerUI(f.id);});
+  draw();
+}
+function onFrameColorManual(id,val){frameState[id].manualColor=val;syncFramePickerUI(id);draw();}
+function clearFrameManual(id){frameState[id].manualColor=null;syncFramePickerUI(id);draw();}
+function toggleFS(id,side){const fs=frameState[id];fs.sides.has(side)?fs.sides.delete(side):fs.sides.add(side);document.getElementById(`frs-${side}-${id}`).classList.toggle('on',fs.sides.has(side));document.getElementById('fr-'+id).classList.toggle('on',fs.sides.size>0);draw();}
+function loadBg(input){const file=input.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{const img=new Image();img.onload=()=>{bgImg=img;document.getElementById('bg-lbl').textContent='✓ '+file.name;draw();};img.src=e.target.result;};r.readAsDataURL(file);}
+function setAcc(k){acc=k;document.querySelectorAll('#acc-pills .pill').forEach(p=>p.classList.remove('on'));document.getElementById('ac-'+k)?.classList.add('on');const hex=ACCS[k];document.getElementById('c-accent').value=hex;document.getElementById('c-cta').value=hex;document.getElementById('c-bold').value=hex;draw();}
+function setAccCustom(){acc='custom';document.querySelectorAll('#acc-pills .pill').forEach(p=>p.classList.remove('on'));draw();}
+function getAccent(){return document.getElementById('c-accent').value;}
+function setTextSide(s){textSide=s;document.querySelectorAll('#side-tog button').forEach((b,i)=>b.classList.toggle('on',(i===0&&s==='left')||(i===1&&s==='right')));draw();}
+
+// ════════════════════════════════════════════════
+// RESETS
+// ════════════════════════════════════════════════
+function resetAll(){resetPalette();resetTitle();resetTagline();resetDesc();resetTextColors();resetTextStyle();resetCTA();setAcc('red');resetOverlays();resetFrames();setTextSide('left');[['bg-bright',110],['ov-int',55],['title-spacing',0],['txt-shadow',20],['txt-outline',0]].forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v;});draw();}
+function resetPalette(){activePalId=null;document.querySelectorAll('.pal-card').forEach(x=>x.classList.remove('on'));FRAMES.forEach(f=>{frameState[f.id].manualColor=null;syncFramePickerUI(f.id);});}
+function resetTitle(){document.getElementById('line1').value='PREMIUM';document.getElementById('line2').value='VINYL WRAP';document.getElementById('title-spacing').value=0;draw();}
+function resetTagline(){document.getElementById('tagline').value='Transform Your Vehicle. Protect the Original Paint.';draw();}
+function resetDesc(){document.getElementById('desc').value='**Full Vehicle** or Partial Wrap — Hood, Roof, Mirrors\n**Gloss / Matte / Satin** Finishes Available\n**Carbon Fiber** & Custom Colour Matching';draw();}
+function resetTextColors(){['c-title','c-tagline','c-bullets','c-bold','c-cta'].forEach((id,i)=>document.getElementById(id).value=['#ffffff','#f0f0f0','#e8e8e8','#E8B84B','#E8B84B'][i]);document.getElementById('txt-shadow').value=20;document.getElementById('txt-outline').value=0;draw();}
+function resetTextStyle(){activeTxtStyle='normal';document.querySelectorAll('.ts-item').forEach(x=>x.classList.remove('on'));document.getElementById('tsi-normal')?.classList.add('on');draw();}
+function resetCTA(){activeCtaStyle='solid_pill';document.querySelectorAll('.cta-item').forEach(x=>x.classList.remove('on'));document.getElementById('ctai-solid_pill')?.classList.add('on');draw();}
+function resetOverlays(){activeOvs=new Set(['vign','bottom']);OVS.forEach(o=>document.getElementById('ov-'+o.id)?.classList.toggle('on',activeOvs.has(o.id)));document.getElementById('ov-int').value=55;draw();}
+function resetFrames(){FRAMES.forEach(f=>{frameState[f.id].sides.clear();frameState[f.id].manualColor=null;document.getElementById('fr-'+f.id)?.classList.remove('on');['T','R','B','L'].forEach(s=>document.getElementById(`frs-${s}-${f.id}`)?.classList.remove('on'));syncFramePickerUI(f.id);});draw();}
+
+// ════════════════════════════════════════════════
+// OVERLAY
+// ════════════════════════════════════════════════
+function applyOverlay(ctx,W,H,ovSet,t){const mg=(x1,y1,x2,y2,a0,a1)=>{const g=ctx.createLinearGradient(x1,y1,x2,y2);g.addColorStop(0,`rgba(0,0,0,${a0*t})`);g.addColorStop(1,`rgba(0,0,0,${a1*t})`);return g;};const A=getAccent(),h2r=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];if(ovSet.has('full')){ctx.fillStyle=`rgba(0,0,0,${0.55*t})`;ctx.fillRect(0,0,W,H);}if(ovSet.has('vign')){const rg=ctx.createRadialGradient(W/2,H/2,W*0.08,W/2,H/2,W*0.75);rg.addColorStop(0,'rgba(0,0,0,0)');rg.addColorStop(1,`rgba(0,0,0,${0.85*t})`);ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);}if(ovSet.has('top')){ctx.fillStyle=mg(0,0,0,H*0.45,0.9,0);ctx.fillRect(0,0,W,H*0.45);}if(ovSet.has('bottom')){ctx.fillStyle=mg(0,H*0.55,0,H,0,0.9);ctx.fillRect(0,H*0.55,W,H*0.45);}if(ovSet.has('left')){ctx.fillStyle=mg(0,0,W*0.55,0,0.88,0);ctx.fillRect(0,0,W*0.55,H);}if(ovSet.has('right')){ctx.fillStyle=mg(W*0.45,0,W,0,0,0.88);ctx.fillRect(W*0.45,0,W*0.55,H);}if(ovSet.has('diag_r')){ctx.save();ctx.beginPath();ctx.moveTo(W*0.42,0);ctx.lineTo(W,0);ctx.lineTo(W,H);ctx.lineTo(W*0.25,H);ctx.closePath();ctx.fillStyle=`rgba(0,0,0,${0.80*t})`;ctx.fill();ctx.restore();}if(ovSet.has('diag_l')){ctx.save();ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(W*0.58,0);ctx.lineTo(W*0.75,H);ctx.lineTo(0,H);ctx.closePath();ctx.fillStyle=`rgba(0,0,0,${0.80*t})`;ctx.fill();ctx.restore();}if(ovSet.has('center')){const rg=ctx.createRadialGradient(W/2,H/2,W*0.05,W/2,H/2,W*0.55);rg.addColorStop(0,'rgba(0,0,0,0)');rg.addColorStop(1,`rgba(0,0,0,${0.85*t})`);ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);}if(ovSet.has('cinematic')){ctx.fillStyle=`rgba(0,0,0,${0.92*t})`;ctx.fillRect(0,0,W,H*0.11);ctx.fillRect(0,H*0.89,W,H*0.11);ctx.fillStyle=mg(W*0.40,0,W,0,0,0.72);ctx.fillRect(W*0.40,0,W*0.60,H);}if(ovSet.has('duotone')){const[r,g,b]=h2r(A);ctx.save();ctx.globalAlpha=0.38*t;const dg=ctx.createLinearGradient(0,0,W,H);dg.addColorStop(0,'rgb(0,0,30)');dg.addColorStop(1,`rgb(${r},${g},${b})`);ctx.fillStyle=dg;ctx.globalCompositeOperation='color';ctx.fillRect(0,0,W,H);ctx.restore();}if(ovSet.has('film')){ctx.save();ctx.globalAlpha=0.06*t;for(let i=0;i<3000;i++){const x=Math.random()*W,y=Math.random()*H,r=Math.random()*1.5;ctx.fillStyle=`rgba(255,255,255,${Math.random()})`;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}ctx.restore();}if(ovSet.has('haze')){ctx.save();ctx.globalAlpha=0.30*t;const hg=ctx.createLinearGradient(0,H*0.3,0,H);hg.addColorStop(0,'rgba(220,220,240,0)');hg.addColorStop(1,'rgba(200,200,220,0.6)');ctx.fillStyle=hg;ctx.fillRect(0,H*0.3,W,H*0.7);ctx.restore();}if(ovSet.has('spotlight')){const sg=ctx.createRadialGradient(W*0.38,H*0.42,0,W*0.38,H*0.42,W*0.45);sg.addColorStop(0,'rgba(0,0,0,0)');sg.addColorStop(1,`rgba(0,0,0,${0.88*t})`);ctx.fillStyle=sg;ctx.fillRect(0,0,W,H);}if(ovSet.has('golden')){ctx.save();ctx.globalAlpha=0.30*t;const gg=ctx.createLinearGradient(0,H,W,0);gg.addColorStop(0,'rgba(255,120,0,0.8)');gg.addColorStop(0.5,'rgba(255,200,50,0.4)');gg.addColorStop(1,'rgba(255,255,200,0)');ctx.fillStyle=gg;ctx.fillRect(0,0,W,H);ctx.restore();}if(ovSet.has('neon')){const[r,g,b]=h2r(A);ctx.save();ctx.globalAlpha=0.22*t;const ng=ctx.createRadialGradient(W*0.5,H*0.5,0,W*0.5,H*0.5,W*0.6);ng.addColorStop(0,`rgba(${r},${g},${b},0.5)`);ng.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=ng;ctx.fillRect(0,0,W,H);ctx.restore();}if(ovSet.has('noir')){ctx.save();ctx.globalAlpha=0.60*t;ctx.globalCompositeOperation='saturation';ctx.fillStyle='rgba(0,0,0,1)';ctx.fillRect(0,0,W,H);ctx.restore();ctx.save();ctx.globalAlpha=0.20*t;ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,W,H);ctx.restore();}if(ovSet.has('chrome_ov')){ctx.save();ctx.globalAlpha=0.18*t;const cg=ctx.createLinearGradient(0,0,W,H);cg.addColorStop(0,'rgba(200,210,220,0.8)');cg.addColorStop(0.5,'rgba(255,255,255,0.4)');cg.addColorStop(1,'rgba(180,190,210,0.8)');ctx.fillStyle=cg;ctx.fillRect(0,0,W,H);ctx.restore();}if(ovSet.has('double_exp')){ctx.save();ctx.globalAlpha=0.22*t;ctx.globalCompositeOperation='screen';const dg=ctx.createLinearGradient(0,0,W,H);dg.addColorStop(0,'rgba(30,0,60,1)');dg.addColorStop(1,'rgba(0,40,80,1)');ctx.fillStyle=dg;ctx.fillRect(0,0,W,H);ctx.restore();}if(ovSet.has('glitch')){ctx.save();ctx.globalAlpha=0.18*t;for(let i=0;i<6;i++){const y=Math.random()*H,h2=Math.random()*20+4,off=Math.random()*30-15;ctx.fillStyle=i%2===0?'rgba(255,0,80,0.6)':'rgba(0,220,255,0.6)';ctx.fillRect(off,y,W,h2);}ctx.restore();}}
+
+// ════════════════════════════════════════════════
+// FRAMES
+// ════════════════════════════════════════════════
+function drawFrame(ctx,W,H,id,sides,color){const T=sides.has('T'),R=sides.has('R'),B=sides.has('B'),L=sides.has('L');if(!T&&!R&&!B&&!L)return;if(id==='stripe'){ctx.fillStyle=color;if(T)ctx.fillRect(0,0,W,8);if(B)ctx.fillRect(0,H-8,W,8);if(L)ctx.fillRect(0,0,8,H);if(R)ctx.fillRect(W-8,0,8,H);ctx.fillStyle=color+'44';if(T)ctx.fillRect(0,10,W,2);if(B)ctx.fillRect(0,H-12,W,2);if(L)ctx.fillRect(10,0,2,H);if(R)ctx.fillRect(W-12,0,2,H);}else if(id==='dashes'){ctx.fillStyle=color;const dh=52,dg=16,dw=8;if(L)for(let i=0;i<4;i++)ctx.fillRect(14,H*0.27+i*(dh+dg),dw,dh);if(R)for(let i=0;i<4;i++)ctx.fillRect(W-22,H*0.27+i*(dh+dg),dw,dh);if(T)for(let i=0;i<4;i++)ctx.fillRect(W*0.27+i*(dh+dg),14,dh,dw);if(B)for(let i=0;i<4;i++)ctx.fillRect(W*0.27+i*(dh+dg),H-22,dh,dw);}else if(id==='dots'){ctx.fillStyle=color+'99';const sp=22,cols=10,rows=4;if(L)for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){ctx.beginPath();ctx.arc(28+c*sp,H*0.72+r*sp,3,0,Math.PI*2);ctx.fill();}if(R)for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){ctx.beginPath();ctx.arc(W-28-(cols-1-c)*sp,H*0.72+r*sp,3,0,Math.PI*2);ctx.fill();}if(T)for(let r=0;r<rows;r++)for(let c=0;c<10;c++){ctx.beginPath();ctx.arc(W*0.3+c*sp,28+r*sp,3,0,Math.PI*2);ctx.fill();}if(B)for(let r=0;r<rows;r++)for(let c=0;c<10;c++){ctx.beginPath();ctx.arc(W*0.3+c*sp,H-28-(rows-1-r)*sp,3,0,Math.PI*2);ctx.fill();}}else if(id==='diamonds'){ctx.save();ctx.strokeStyle=color+'30';ctx.lineWidth=1.2;const ds=68;const dg=(ox)=>{for(let row=-1;row<H/ds+3;row++)for(let col=0;col<6;col++){const dx=ox+col*ds,dy=row*ds-20;ctx.save();ctx.translate(dx,dy);ctx.rotate(Math.PI/4);ctx.strokeRect(-ds/2,-ds/2,ds,ds);ctx.restore();}};if(R)dg(W*0.57);if(L)dg(-ds*0.5);if(T)for(let ro=0;ro<3;ro++)for(let co=0;co<20;co++){const dx=co*ds-ds/2,dy=ro*ds-ds/2;ctx.save();ctx.translate(dx,dy);ctx.rotate(Math.PI/4);ctx.strokeRect(-ds/2,-ds/2,ds,ds);ctx.restore();}if(B)for(let ro=0;ro<3;ro++)for(let co=0;co<20;co++){const dx=co*ds-ds/2,dy=H-ro*ds-ds/2;ctx.save();ctx.translate(dx,dy);ctx.rotate(Math.PI/4);ctx.strokeRect(-ds/2,-ds/2,ds,ds);ctx.restore();}ctx.restore();}else if(id==='corners'){const len=80,th=5;ctx.fillStyle=color;if(T&&L){ctx.fillRect(20,20,len,th);ctx.fillRect(20,20,th,len);}if(T&&R){ctx.fillRect(W-20-len,20,len,th);ctx.fillRect(W-25,20,th,len);}if(B&&L){ctx.fillRect(20,H-25,len,th);ctx.fillRect(20,H-20-len,th,len);}if(B&&R){ctx.fillRect(W-20-len,H-25,len,th);ctx.fillRect(W-25,H-20-len,th,len);}if(T&&!L)ctx.fillRect(20,20,len,th);if(T&&!R)ctx.fillRect(W-20-len,20,len,th);if(B&&!L)ctx.fillRect(20,H-25,len,th);if(B&&!R)ctx.fillRect(W-20-len,H-25,len,th);if(L&&!T)ctx.fillRect(20,20,th,len);if(L&&!B)ctx.fillRect(20,H-20-len,th,len);if(R&&!T)ctx.fillRect(W-25,20,th,len);if(R&&!B)ctx.fillRect(W-25,H-20-len,th,len);}else if(id==='brackets'){ctx.strokeStyle=color;ctx.lineWidth=4;ctx.lineCap='square';const len=90,pad=18;function br(x,y,sx,sy){ctx.beginPath();ctx.moveTo(x+sx*len,y);ctx.lineTo(x,y);ctx.lineTo(x,y+sy*len);ctx.stroke();}if(T||L)br(pad,pad,1,1);if(T||R)br(W-pad,pad,-1,1);if(B||L)br(pad,H-pad,1,-1);if(B||R)br(W-pad,H-pad,-1,-1);}else if(id==='hexgrid'){ctx.save();ctx.strokeStyle=color+'2A';ctx.lineWidth=1;const r=30,hh=r*Math.sqrt(3);const dh=(ox,ow)=>{for(let row=-1;row<H/hh+2;row++)for(let col=-1;col<ow/(r*1.5)+2;col++){const cx=ox+col*r*3+(row%2)*r*1.5,cy=row*hh;ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/3*i-Math.PI/6;ctx.lineTo(cx+(r-1)*Math.cos(a),cy+(r-1)*Math.sin(a));}ctx.closePath();ctx.stroke();}};if(L)dh(0,W*0.42);if(R)dh(W*0.58,W*0.42);if(T||B)dh(0,W);ctx.restore();}else if(id==='scanlines'){ctx.save();ctx.globalAlpha=0.07;ctx.fillStyle=color;if(T)for(let y=0;y<H*0.5;y+=4)ctx.fillRect(0,y,W,2);if(B)for(let y=H*0.5;y<H;y+=4)ctx.fillRect(0,y,W,2);if(L)for(let x=0;x<W*0.5;x+=4)ctx.fillRect(x,0,2,H);if(R)for(let x=W*0.5;x<W;x+=4)ctx.fillRect(x,0,2,H);ctx.restore();}else if(id==='border'){ctx.strokeStyle=color;ctx.lineWidth=5;const pad=12;if(T){ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(W-pad,pad);ctx.stroke();}if(B){ctx.beginPath();ctx.moveTo(pad,H-pad);ctx.lineTo(W-pad,H-pad);ctx.stroke();}if(L){ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(pad,H-pad);ctx.stroke();}if(R){ctx.beginPath();ctx.moveTo(W-pad,pad);ctx.lineTo(W-pad,H-pad);ctx.stroke();}ctx.lineWidth=2;ctx.strokeStyle=color+'44';if(T){ctx.beginPath();ctx.moveTo(pad+8,pad+8);ctx.lineTo(W-pad-8,pad+8);ctx.stroke();}if(B){ctx.beginPath();ctx.moveTo(pad+8,H-pad-8);ctx.lineTo(W-pad-8,H-pad-8);ctx.stroke();}if(L){ctx.beginPath();ctx.moveTo(pad+8,pad+8);ctx.lineTo(pad+8,H-pad-8);ctx.stroke();}if(R){ctx.beginPath();ctx.moveTo(W-pad-8,pad+8);ctx.lineTo(W-pad-8,H-pad-8);ctx.stroke();}}else if(id==='lines'){ctx.save();ctx.strokeStyle=color+'20';ctx.lineWidth=1.5;if(L||R)for(let i=-H;i<W+H;i+=50){ctx.beginPath();if(L&&i<W*0.5){ctx.moveTo(i,0);ctx.lineTo(i+H,H);ctx.stroke();}if(R&&i>W*0.3){ctx.moveTo(i,0);ctx.lineTo(i+H,H);ctx.stroke();}}if(T)for(let i=0;i<W;i+=50){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,H*0.4);ctx.stroke();}if(B)for(let i=0;i<W;i+=50){ctx.beginPath();ctx.moveTo(i,H);ctx.lineTo(i,H*0.6);ctx.stroke();}ctx.restore();}}
+
+// ════════════════════════════════════════════════
+// TEXT RENDERING
+// ════════════════════════════════════════════════
+function drawTitleLine(ctx,text,startX,y,font,color,spacing,style,sb,ow,oc){
+  ctx.save();ctx.font=font;ctx.textAlign='left';
+  ctx.shadowBlur=0;ctx.shadowColor='transparent';ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;ctx.globalAlpha=1;ctx.lineWidth=Math.max(ow*2,1);ctx.strokeStyle=oc;
+  if(spacing===0){
+    if(style==='shadow_l'){ctx.shadowBlur=sb;ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowOffsetX=-5;ctx.shadowOffsetY=4;}
+    else if(style==='shadow_r'){ctx.shadowBlur=sb;ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowOffsetX=5;ctx.shadowOffsetY=4;}
+    else if(style==='glow'){ctx.shadowBlur=28;ctx.shadowColor=color+'BB';}
+    else if(style==='neon_txt'){ctx.shadowBlur=22;ctx.shadowColor=color;}
+    else if(style==='emboss'){ctx.shadowBlur=6;ctx.shadowColor='rgba(0,0,0,0.7)';ctx.shadowOffsetX=3;ctx.shadowOffsetY=3;ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillText(text,startX,y);ctx.shadowBlur=4;ctx.shadowColor='rgba(255,255,255,0.6)';ctx.shadowOffsetX=-2;ctx.shadowOffsetY=-2;}
+    else if(style==='ghost'){ctx.globalAlpha=0.60;}
+    else if(style==='outline'){ctx.lineWidth=Math.max(ow*2,4);}
+    else if(style==='stamp'){ctx.lineWidth=6;ctx.strokeStyle='rgba(0,0,0,0.8)';}
+    else if(style==='retro'){ctx.lineWidth=3;ctx.strokeStyle=color;}
+    else if(style==='military'){ctx.lineWidth=5;ctx.strokeStyle='rgba(0,0,0,1)';}
+    else{ctx.shadowBlur=sb;ctx.shadowColor='rgba(0,0,0,0.95)';}
+    const ns=ow>0||['outline','stamp','retro','military'].includes(style);
+    if(ns)ctx.strokeText(text,startX,y);ctx.fillStyle=color;ctx.fillText(text,startX,y);
+  }else{
+    const cw=[...text].map(ch=>ctx.measureText(ch).width);
+    if(sb>0&&!['emboss','ghost','outline','stamp','retro','military'].includes(style)){ctx.shadowBlur=sb;ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowOffsetX=style==='shadow_l'?-5:style==='shadow_r'?5:0;ctx.shadowOffsetY=(style==='shadow_l'||style==='shadow_r')?4:0;if(style==='glow'){ctx.shadowColor=color+'BB';ctx.shadowBlur=28;}if(style==='neon_txt'){ctx.shadowColor=color;ctx.shadowBlur=22;}}
+    const ns=ow>0||['outline','stamp','retro','military'].includes(style);
+    let cx=startX;
+    for(let i=0;i<text.length;i++){ctx.fillStyle=color;if(style==='ghost')ctx.globalAlpha=0.60;if(ns){ctx.lineWidth=style==='outline'?Math.max(ow*2,4):style==='stamp'?6:style==='retro'?3:style==='military'?5:ow*2;ctx.strokeStyle=style==='stamp'?'rgba(0,0,0,0.8)':style==='retro'?color:style==='military'?'rgba(0,0,0,1)':oc;ctx.strokeText(text[i],cx,y);}ctx.fillText(text[i],cx,y);cx+=cw[i]+spacing;}
+  }
+  ctx.restore();
+}
+
+function richLine(ctx,text,x,y,nFont,bFont,nColor,bColor,align,style,sb,ow,oc){
+  const parts=text.split(/(\*\*.*?\*\*)/g).filter(p=>p);
+  const segs=parts.map(p=>{const isBold=p.startsWith('**')&&p.endsWith('**');const str=isBold?p.slice(2,-2):p;ctx.font=isBold?bFont:nFont;return{str,isBold,w:ctx.measureText(str).width};});
+  const totalW=segs.reduce((s,p)=>s+p.w,0);
+  let cx=align==='right'?x-totalW:align==='center'?x-totalW/2:x;
+  segs.forEach(seg=>{
+    if(!seg.str)return;const col=seg.isBold?bColor:nColor;
+    ctx.save();ctx.shadowBlur=0;ctx.shadowColor='transparent';ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;ctx.globalAlpha=1;
+    ctx.font=seg.isBold?bFont:nFont;ctx.textAlign='left';
+    if(style==='shadow_l'){ctx.shadowBlur=sb;ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowOffsetX=-5;ctx.shadowOffsetY=4;}
+    else if(style==='shadow_r'){ctx.shadowBlur=sb;ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowOffsetX=5;ctx.shadowOffsetY=4;}
+    else if(style==='glow'){ctx.shadowBlur=28;ctx.shadowColor=col+'BB';}
+    else if(style==='neon_txt'){ctx.shadowBlur=22;ctx.shadowColor=col;}
+    else if(style==='emboss'){ctx.shadowBlur=4;ctx.shadowColor='rgba(0,0,0,0.5)';ctx.shadowOffsetX=2;ctx.shadowOffsetY=2;}
+    else if(style==='ghost'){ctx.globalAlpha=0.60;}
+    else if(style==='outline'){ctx.lineWidth=Math.max(ow*2,4);ctx.strokeStyle=oc;}
+    else if(style==='stamp'){ctx.lineWidth=6;ctx.strokeStyle='rgba(0,0,0,0.8)';}
+    else if(style==='retro'){ctx.lineWidth=3;ctx.strokeStyle=col;}
+    else if(style==='military'){ctx.lineWidth=5;ctx.strokeStyle='rgba(0,0,0,1)';}
+    else{ctx.shadowBlur=sb;ctx.shadowColor='rgba(0,0,0,0.95)';}
+    const ns=ow>0||['outline','stamp','retro','military'].includes(style);
+    if(ns)ctx.strokeText(seg.str,cx,y);ctx.fillStyle=col;ctx.fillText(seg.str,cx,y);
+    ctx.restore();cx+=seg.w;
+  });
+}
+
+function drawCTA(ctx,W,H,style,ctaText,subText,shopText,anchorX,align,ctaColor){
+  const isLeft=align==='left';const ctaY=H-170;const ctaW=580;const bx=isLeft?anchorX:anchorX-ctaW;const A=getAccent();
+  ctx.save();ctx.shadowBlur=0;ctx.shadowColor='transparent';ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;ctx.globalAlpha=1;ctx.lineWidth=1;
+  if(style==='solid_pill'){const bh=62;ctx.fillStyle=ctaColor;ctx.beginPath();ctx.roundRect(bx,ctaY,ctaW,bh,31);ctx.fill();ctx.font='700 26px Arial';ctx.fillStyle='rgba(0,0,0,0.85)';ctx.textAlign='center';ctx.fillText(ctaText,bx+ctaW/2,ctaY+38);}
+  else if(style==='gradient_btn'){const bh=62;const g=ctx.createLinearGradient(bx,0,bx+ctaW,0);g.addColorStop(0,ctaColor);g.addColorStop(1,A);ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(bx,ctaY,ctaW,bh,10);ctx.fill();ctx.font='700 26px Arial';ctx.fillStyle='rgba(0,0,0,0.85)';ctx.textAlign='center';ctx.fillText(ctaText,bx+ctaW/2,ctaY+38);}
+  else if(style==='outline_pill'){const bh=60;ctx.strokeStyle=ctaColor;ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(bx,ctaY,ctaW,bh,30);ctx.stroke();ctx.font='700 26px Arial';ctx.fillStyle=ctaColor;ctx.textAlign='center';ctx.fillText(ctaText,bx+ctaW/2,ctaY+38);}
+  else if(style==='flat_bar'){const bh=56;ctx.fillStyle=ctaColor;ctx.fillRect(bx,ctaY,ctaW,bh);ctx.fillStyle='rgba(0,0,0,0.2)';ctx.fillRect(bx,ctaY,6,bh);ctx.font='700 26px Arial';ctx.fillStyle='rgba(0,0,0,0.85)';ctx.textAlign='center';ctx.fillText(ctaText,bx+ctaW/2,ctaY+36);}
+  else if(style==='tag_badge'){const bh=52,bw=300,bxT=isLeft?anchorX:anchorX-bw;ctx.fillStyle=ctaColor;ctx.beginPath();ctx.moveTo(bxT,ctaY);ctx.lineTo(bxT+bw-18,ctaY);ctx.lineTo(bxT+bw,ctaY+bh/2);ctx.lineTo(bxT+bw-18,ctaY+bh);ctx.lineTo(bxT,ctaY+bh);ctx.closePath();ctx.fill();ctx.font='700 20px Arial';ctx.fillStyle='rgba(0,0,0,0.85)';ctx.textAlign='center';ctx.fillText(ctaText.split(' ').slice(0,4).join(' '),bxT+bw*0.45,ctaY+33);}
+  else if(style==='sharp_box'){const bh=58;ctx.fillStyle=ctaColor;ctx.fillRect(bx,ctaY,ctaW,bh);ctx.font='700 26px Arial';ctx.fillStyle='rgba(0,0,0,0.85)';ctx.textAlign='center';ctx.fillText(ctaText,bx+ctaW/2,ctaY+37);}
+  else if(style==='double_line'){ctx.strokeStyle=ctaColor;ctx.lineWidth=2;const lx1=isLeft?anchorX:anchorX-480;ctx.beginPath();ctx.moveTo(lx1,ctaY);ctx.lineTo(lx1+480,ctaY);ctx.stroke();ctx.beginPath();ctx.moveTo(lx1,ctaY+6);ctx.lineTo(lx1+480,ctaY+6);ctx.stroke();ctx.font='700 30px Arial';ctx.fillStyle=ctaColor;ctx.textAlign=align;ctx.shadowBlur=12;ctx.shadowColor='rgba(0,0,0,0.9)';ctx.fillText(ctaText,anchorX,ctaY+50);}
+  else{ctx.font='700 32px Arial';ctx.fillStyle=ctaColor;ctx.textAlign=align;ctx.shadowBlur=14;ctx.shadowColor='rgba(0,0,0,0.95)';ctx.fillText(ctaText,anchorX,ctaY+36);}
+  ctx.shadowBlur=0;ctx.shadowColor='transparent';ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+  ctx.textAlign=align;ctx.shadowBlur=10;ctx.shadowColor='rgba(0,0,0,0.9)';
+  ctx.font='400 24px Arial';ctx.fillStyle='rgba(255,255,255,0.58)';ctx.fillText(subText,anchorX,ctaY+90);
+  ctx.font='700 28px Arial';ctx.fillStyle=ctaColor;ctx.fillText(shopText,anchorX,ctaY+130);
+  ctx.restore();
+}
+
+// ════════════════════════════════════════════════
+// MAIN DRAW
+// ════════════════════════════════════════════════
+function draw(){
+  const cv=document.getElementById('cv');const ctx=cv.getContext('2d');const W=1200,H=900;
+  const intensity=parseInt(document.getElementById('ov-int').value)/100;
+  const bbright=parseInt(document.getElementById('bg-bright').value);
+  const spacing=parseInt(document.getElementById('title-spacing').value)||0;
+  const sb=parseInt(document.getElementById('txt-shadow').value);
+  const ow=parseInt(document.getElementById('txt-outline').value);
+  const oc=document.getElementById('c-outline').value;
+  if(bgImg){ctx.save();ctx.filter=`brightness(${bbright}%)`;const ir=bgImg.width/bgImg.height,cr=W/H;let sw,sh,sx=0,sy=0;if(ir>cr){sh=H;sw=sh*ir;sx=-(sw-W)/2;}else{sw=W;sh=sw/ir;sy=-(sh-H)/2;}ctx.drawImage(bgImg,sx,sy,sw,sh);ctx.restore();}
+  else{ctx.fillStyle='#1a1a1a';ctx.fillRect(0,0,W,H);for(let y=0;y<H;y+=36)for(let x=0;x<W;x+=36){if((Math.floor(x/36)+Math.floor(y/36))%2===0){ctx.fillStyle='#222';ctx.fillRect(x,y,36,36);}}ctx.font='400 18px Arial';ctx.fillStyle='#555';ctx.textAlign='center';ctx.fillText('Upload a car photo to use as background',W/2,H/2);}
+  applyOverlay(ctx,W,H,activeOvs,intensity);
+  FRAMES.forEach(f=>{const fs=frameState[f.id];if(fs.sides.size>0)drawFrame(ctx,W,H,f.id,fs.sides,getFrameColor(f.id));});
+  const line1=document.getElementById('line1').value||'PREMIUM';const line2=document.getElementById('line2').value||'VINYL WRAP';
+  const tagline=document.getElementById('tagline').value;const desc=document.getElementById('desc').value;
+  const shop=document.getElementById('shop').value||'RewindPPF';const loc=document.getElementById('location').value;
+  const isLeft=textSide==='left';const anchorX=isLeft?52:W-52;const align=isLeft?'left':'right';const titleMaxW=W*0.53;
+  const isItalic=activeTxtStyle==='italic';const fPfx=isItalic?'italic ':'';
+  const cTitle=document.getElementById('c-title').value,cTagline=document.getElementById('c-tagline').value;
+  const cBullets=document.getElementById('c-bullets').value,cBold=document.getElementById('c-bold').value,cCta=document.getElementById('c-cta').value;
+  function mw(text,font,sp){ctx.font=font;if(sp===0)return ctx.measureText(text).width;return[...text].reduce((s,ch,i)=>s+ctx.measureText(ch).width+(i<text.length-1?sp:0),0);}
+  let fs1=100;while(mw(line1,`${fPfx}900 ${fs1}px Arial`,spacing)>titleMaxW&&fs1>38)fs1-=2;
+  const font1=`${fPfx}900 ${fs1}px Arial`;const w1=mw(line1,font1,spacing);
+  let fs2=100;while(mw(line2,`${fPfx}900 ${fs2}px Arial`,spacing)>titleMaxW&&fs2>38)fs2-=2;
+  const font2=`${fPfx}900 ${fs2}px Arial`;const w2=mw(line2,font2,spacing);
+  const by0=28,t1y=by0+18+fs1,t2y=t1y+fs2*1.1;
+  const bx0=isLeft?anchorX-24:anchorX-Math.max(w1,w2)-28;
+  const tg=ctx.createLinearGradient(bx0,by0,bx0,t2y+40);tg.addColorStop(0,'rgba(0,0,0,0.75)');tg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=tg;ctx.fillRect(bx0-14,by0-8,Math.max(w1,w2)+56,t2y-by0+60);
+  drawTitleLine(ctx,line1,isLeft?anchorX:anchorX-w1,t1y,font1,cTitle,spacing,activeTxtStyle,sb,ow,oc);
+  drawTitleLine(ctx,line2,isLeft?anchorX:anchorX-w2,t2y,font2,cTitle,spacing,activeTxtStyle,sb,ow,oc);
+  const afterTitle=t2y+18+14;
+  if(tagline){ctx.save();ctx.shadowBlur=Math.round(sb*0.75);ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;ctx.globalAlpha=activeTxtStyle==='ghost'?0.6:1;if(activeTxtStyle==='glow'){ctx.shadowColor=cTagline+'99';ctx.shadowBlur=20;}ctx.font=`${fPfx}400 38px Arial`;ctx.fillStyle=cTagline;ctx.textAlign=align;const words=tagline.split(' ');let tl='',tlines=[];for(const w of words){const t=tl+w+' ';if(ctx.measureText(t).width>titleMaxW&&tl){tlines.push(tl.trim());tl=w+' ';}else tl=t;}if(tl.trim())tlines.push(tl.trim());tlines.forEach((l,i)=>ctx.fillText(l,anchorX,afterTitle+50+i*50));ctx.restore();}
+  const dlines=desc.split('\n').filter(l=>l.trim()).slice(0,3);const bullY=afterTitle+170;
+  dlines.forEach((line,i)=>{richLine(ctx,line.trim(),anchorX,bullY+i*60,`${fPfx}400 27px Arial`,`${fPfx}700 27px Arial`,cBullets,cBold,align,activeTxtStyle,sb,ow,oc);});
+  drawCTA(ctx,W,H,activeCtaStyle,'💬  DM or Message Us for a Quote','Free Consultation Available',shop+' · '+loc,anchorX,align,cCta);
+}
+
+// ════════════════════════════════════════════════
+// DOWNLOAD / COPY
+// ════════════════════════════════════════════════
+function dlImg(){
+  const cv=document.getElementById('cv');const btn=document.getElementById('dl-btn');
+  const n=(document.getElementById('line2').value||'poster').replace(/[^a-z0-9]/gi,'_').toLowerCase();
+  btn.textContent='⏳…';btn.disabled=true;
+  try{cv.toBlob(blob=>{const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='rewindppf_'+n+'.png';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},800);btn.textContent='✅ Saved!';setTimeout(()=>{btn.textContent='⬇ Download PNG';btn.disabled=false;},2500);},'image/png');}
+  catch(e){try{const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='rewindppf_'+n+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);btn.textContent='✅ Saved!';setTimeout(()=>{btn.textContent='⬇ Download PNG';btn.disabled=false;},2500);}catch(e2){window.open(cv.toDataURL('image/png'),'_blank');btn.textContent='⬇ Download PNG';btn.disabled=false;}}
+}
+function cpyCap(){
+  const l1=document.getElementById('line1').value,l2=document.getElementById('line2').value;
+  const tag=document.getElementById('tagline').value,desc=document.getElementById('desc').value;
+  const shop=document.getElementById('shop').value,loc=document.getElementById('location').value;
+  const clean=desc.replace(/\*\*/g,'');
+  const txt=[`🚗 ${l1} ${l2}`,tag?`\n${tag}`:'','',clean,'','💬 DM or Message Us for a FREE Quote!','✅ Free Consultation Available',`📍 ${shop} · ${loc}`,'','#RewindPPF #PPF #CeramicCoating #VinylWrap #ChromeDelete #Calgary #AutoDetailing'].join('\n');
+  navigator.clipboard.writeText(txt).then(()=>alert('Caption copied to clipboard!'));
+}
+
+// ════════════════════════════════════════════════
+// BACKGROUND REMOVER (no AI — 100% local)
+// ════════════════════════════════════════════════
+let brImage=null,brResult=null,brSampledColor=null,brMethod='color',brIsProcessing=false;
+
+// Sliders display
+[['br-tol','br-tol-val',''],['br-feather','br-feath-val','px'],['br-sens','br-sens-val',''],['br-efeather','br-efeath-val','px']].forEach(([id,vid,sfx])=>{const el=document.getElementById(id);if(el)el.addEventListener('input',()=>{const v=document.getElementById(vid);if(v)v.textContent=el.value+sfx;});});
+
+function brSetMethod(m){
+  brMethod=m;
+  ['color','edge'].forEach(x=>{document.getElementById('brm-'+x).classList.toggle('on',x===m);document.getElementById('br-opts-'+x).style.display=x===m?'block':'none';});
+}
+
+function brLoad(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      brImage=img;
+      const oc=document.getElementById('br-orig');
+      const maxW=300,maxH=200;let w=img.width,h=img.height;
+      if(w>maxW){h=h*maxW/w;w=maxW;}if(h>maxH){w=w*maxH/h;h=maxH;}
+      oc.width=Math.round(w);oc.height=Math.round(h);
+      oc.getContext('2d').drawImage(img,0,0,oc.width,oc.height);
+      const wc=document.getElementById('br-work');
+      const maxP=1000;let pw=img.width,ph=img.height;
+      if(pw>maxP){ph=ph*maxP/pw;pw=maxP;}if(ph>maxP){pw=pw*maxP/ph;ph=maxP;}
+      wc.width=Math.round(pw);wc.height=Math.round(ph);
+      wc.getContext('2d').drawImage(img,0,0,wc.width,wc.height);
+      const rc=document.getElementById('br-result');rc.width=oc.width;rc.height=oc.height;rc.getContext('2d').clearRect(0,0,rc.width,rc.height);
+      oc.onclick=brOnCanvasClick;oc.style.cursor='crosshair';
+      document.getElementById('br-controls').style.display='block';
+      document.getElementById('br-upload').style.display='none';
+      setStep(2,['br-step1','br-step2','br-step3']);
+      brShowStatus('Photo loaded. Click on background area in Original image to sample colour, then click Remove Background.','info');
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function brOnCanvasClick(e){
+  if(brMethod!=='color')return;
+  const oc=document.getElementById('br-orig');
+  const rect=oc.getBoundingClientRect();
+  const sx=oc.width/rect.width,sy=oc.height/rect.height;
+  const x=Math.floor((e.clientX-rect.left)*sx),y=Math.floor((e.clientY-rect.top)*sy);
+  const px=oc.getContext('2d').getImageData(x,y,1,1).data;
+  brSampledColor={r:px[0],g:px[1],b:px[2]};
+  const hint=document.getElementById('br-click-hint');
+  hint.textContent=`✅ Colour sampled: rgb(${px[0]},${px[1]},${px[2]}) — now click Remove Background`;
+  hint.style.color='var(--success)';hint.style.background='var(--success-bg)';
+}
+
+function brUpdatePreview(){if(brImage&&(brMethod==='edge'||(brMethod==='color'&&brSampledColor)))brRemove(true);}
+
+function brShowStatus(msg,type){const el=document.getElementById('br-status');el.textContent=msg;el.className='status show '+type;}
+
+async function brRemove(preview=false){
+  if(!brImage||brIsProcessing)return;
+  if(brMethod==='color'&&!brSampledColor){brShowStatus('👆 Click on the background in the Original image first to sample a colour','warn');return;}
+  brIsProcessing=true;
+  const btn=document.getElementById('br-remove-btn');
+  if(!preview){btn.disabled=true;btn.textContent='⏳ Processing…';}
+  const wc=document.getElementById('br-work');
+  const ctx=wc.getContext('2d');const W=wc.width,H=wc.height;
+  const imgData=ctx.getImageData(0,0,W,H);const data=imgData.data;
+  let mask;
+  try{
+    if(brMethod==='color'){
+      const tol=parseInt(document.getElementById('br-tol').value);
+      mask=brColourRemove(data,W,H,brSampledColor,tol);
+      brApplyFeather(mask,W,H,parseInt(document.getElementById('br-feather').value));
+    }else{
+      mask=brEdgeRemove(data,W,H,parseInt(document.getElementById('br-sens').value));
+      brApplyFeather(mask,W,H,parseInt(document.getElementById('br-efeather').value));
+    }
+    const out=ctx.createImageData(W,H);
+    for(let i=0;i<W*H;i++){out.data[i*4]=data[i*4];out.data[i*4+1]=data[i*4+1];out.data[i*4+2]=data[i*4+2];out.data[i*4+3]=mask[i];}
+    const off=document.createElement('canvas');off.width=W;off.height=H;off.getContext('2d').putImageData(out,0,0);
+    brResult={canvas:off,width:W,height:H};
+    const rc=document.getElementById('br-result'),oc=document.getElementById('br-orig');
+    rc.width=oc.width;rc.height=oc.height;rc.getContext('2d').clearRect(0,0,rc.width,rc.height);
+    rc.getContext('2d').drawImage(off,0,0,rc.width,rc.height);
+    if(!preview){
+      brShowStatus('✅ Background removed! Use the buttons below.','success');
+      document.getElementById('br-after-btns').style.display='block';
+      setStep(3,['br-step1','br-step2','br-step3']);
+    }
+  }catch(err){brShowStatus('Error: '+err.message,'err');}
+  brIsProcessing=false;
+  if(!preview){btn.disabled=false;btn.textContent='✂️ Remove Background';}
+}
+
+function brColourRemove(data,W,H,sc,tol){
+  const mask=new Uint8Array(W*H).fill(255);
+  for(let i=0;i<W*H;i++){const r=data[i*4],g=data[i*4+1],b=data[i*4+2];if(Math.sqrt((r-sc.r)**2+(g-sc.g)**2+(b-sc.b)**2)<tol)mask[i]=0;}
+  const q=[];
+  for(let x=0;x<W;x++){q.push(x);q.push((H-1)*W+x);}for(let y=0;y<H;y++){q.push(y*W);q.push(y*W+W-1);}
+  const vis=new Uint8Array(W*H);
+  while(q.length){const idx=q.pop();if(vis[idx]||mask[idx]===255)continue;vis[idx]=1;mask[idx]=0;const x=idx%W,y=Math.floor(idx/W);if(x>0)q.push(idx-1);if(x<W-1)q.push(idx+1);if(y>0)q.push(idx-W);if(y<H-1)q.push(idx+W);}
+  return mask;
+}
+
+function brEdgeRemove(data,W,H,sens){
+  const gray=new Float32Array(W*H);for(let i=0;i<W*H;i++)gray[i]=(data[i*4]*0.299+data[i*4+1]*0.587+data[i*4+2]*0.114)/255;
+  const edges=new Float32Array(W*H);let maxE=0;
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const gx=(-gray[(y-1)*W+(x-1)]+gray[(y-1)*W+(x+1)]-2*gray[y*W+(x-1)]+2*gray[y*W+(x+1)]-gray[(y+1)*W+(x-1)]+gray[(y+1)*W+(x+1)]);const gy=(-gray[(y-1)*W+(x-1)]-2*gray[(y-1)*W+x]-gray[(y-1)*W+(x+1)]+gray[(y+1)*W+(x-1)]+2*gray[(y+1)*W+x]+gray[(y+1)*W+(x+1)]);edges[y*W+x]=Math.sqrt(gx*gx+gy*gy);if(edges[y*W+x]>maxE)maxE=edges[y*W+x];}
+  const thresh=sens/100*maxE;
+  const isBg=new Uint8Array(W*H).fill(0);const q=[];
+  for(let x=0;x<W;x++){q.push(x);q.push((H-1)*W+x);}for(let y=0;y<H;y++){q.push(y*W);q.push(y*W+W-1);}
+  const vis=new Uint8Array(W*H);
+  while(q.length){const idx=q.pop();if(vis[idx])continue;vis[idx]=1;if(edges[idx]>thresh){continue;}isBg[idx]=1;const x=idx%W,y=Math.floor(idx/W);if(x>0)q.push(idx-1);if(x<W-1)q.push(idx+1);if(y>0)q.push(idx-W);if(y<H-1)q.push(idx+W);}
+  const mask=new Uint8Array(W*H);for(let i=0;i<W*H;i++)mask[i]=isBg[i]?0:255;
+  return mask;
+}
+
+function brApplyFeather(mask,W,H,radius){
+  if(radius<=0)return;
+  const sigma=Math.max(radius/2,0.5);const ks=Math.ceil(radius*2)+1;const mid=ks>>1;
+  const kernel=[];let ksum=0;for(let k=-(ks>>1);k<=(ks>>1);k++){const v=Math.exp(-k*k/(2*sigma*sigma));kernel.push(v);ksum+=v;}kernel.forEach((_,i,a)=>a[i]/=ksum);
+  const tmp=new Float32Array(W*H);for(let i=0;i<W*H;i++)tmp[i]=mask[i];
+  const h1=new Float32Array(W*H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){let s=0;for(let k=0;k<ks;k++){const nx=Math.max(0,Math.min(W-1,x+k-mid));s+=tmp[y*W+nx]*kernel[k];}h1[y*W+x]=s;}
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){let s=0;for(let k=0;k<ks;k++){const ny=Math.max(0,Math.min(H-1,y+k-mid));s+=h1[ny*W+x]*kernel[k];}mask[y*W+x]=Math.round(s);}
+}
+
+function brUseInPoster(){
+  if(!brResult)return;
+  const dataUrl=brResult.canvas.toDataURL('image/png');
+  const img=new Image();
+  img.onload=()=>{bgImg=img;document.getElementById('bg-lbl').textContent='✓ BG-removed photo loaded';draw();switchTab('poster');brShowStatus('✅ Applied to poster! Switch to the Poster tab to see it.','success');};
+  img.src=dataUrl;
+}
+
+function brDownload(){
+  if(!brResult)return;
+  const a=document.createElement('a');a.href=brResult.canvas.toDataURL('image/png');a.download='car_no_bg.png';document.body.appendChild(a);a.click();document.body.removeChild(a);
+  brShowStatus('✅ Saved as car_no_bg.png!','success');
+}
+
+function brReset(){
+  brImage=null;brResult=null;brSampledColor=null;brIsProcessing=false;
+  document.getElementById('br-controls').style.display='none';
+  document.getElementById('br-upload').style.display='block';
+  document.getElementById('br-after-btns').style.display='none';
+  document.getElementById('br-input').value='';
+  document.getElementById('br-click-hint').textContent='👆 Click on a background area in the Original preview to sample its colour';
+  document.getElementById('br-click-hint').style.color='var(--info)';
+  document.getElementById('br-click-hint').style.background='var(--info-bg)';
+  setStep(1,['br-step1','br-step2','br-step3']);
+  document.getElementById('br-status').classList.remove('show');
+}
+</script>
+</body>
+</html>
