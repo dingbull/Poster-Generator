@@ -5,142 +5,181 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RewindPPF — Facebook Marketplace Poster Generator</title>
 <style>
-/* ── RESET & BASE ── */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#222;--surface3:#2a2a2a;
   --border:#333;--border2:#444;
-  --text:#eee;--text2:#aaa;--text3:#666;
-  --accent:#E8B84B;--accent2:#FF2020;
+  --text:#eee;--text2:#bbb;--text3:#777;
+  --accent:#E8B84B;
   --info-bg:#1a2a3a;--info:#60aaff;
   --success-bg:#1a2e1a;--success:#44cc66;
   --warn-bg:#2e2a1a;--warn:#ccaa44;
   --danger-bg:#2e1a1a;--danger:#ff5544;
   --radius:8px;--radius-lg:12px;
 }
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;min-height:100vh}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh}
 h1{font-size:22px;font-weight:700;color:var(--accent)}
-h2{font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px}
-h3{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
 a{color:var(--accent);text-decoration:none}
 
 /* ── LAYOUT ── */
-.app{display:grid;grid-template-columns:340px 1fr;gap:0;min-height:100vh}
-.sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:4px}
-.main{padding:16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
-.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;grid-column:1/-1}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.body{display:flex;flex:1;overflow:hidden}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;width:420px;min-width:280px;max-width:72%;flex-shrink:0;overflow:hidden}
+.divider{width:5px;background:var(--border);cursor:col-resize;flex-shrink:0;position:relative;transition:background .15s;user-select:none}
+.divider:hover,.divider.dragging{background:var(--accent)}
+.divider::after{content:'⋮';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--border2);font-size:18px;line-height:1}
+.divider:hover::after,.divider.dragging::after{color:var(--accent)}
+.main{flex:1;padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;min-width:0}
 
-/* ── TABS ── */
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:12px}
-.tab{padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;transition:all .15s}
-.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
-.tab-content{display:none}.tab-content.on{display:block}
+/* ── MODE TABS (Poster / BG Remove) ── */
+.mode-tabs{display:flex;border-bottom:2px solid var(--border);flex-shrink:0}
+.mode-tab{flex:1;padding:14px 10px;font-size:15px;font-weight:700;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.mode-tab.on{color:var(--accent);border-bottom-color:var(--accent);background:var(--surface2)}
+.mode-tab:hover:not(.on){color:var(--text);background:var(--surface3)}
+.mode-content{display:none;flex:1;flex-direction:column;overflow:hidden}
+.mode-content.on{display:flex}
 
-/* ── SECTIONS ── */
-.section{margin-bottom:14px}
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.sec-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+/* ── STEP NAV BAR ── */
+.step-nav{display:flex;overflow-x:auto;border-bottom:1px solid var(--border);flex-shrink:0;scrollbar-width:none;background:var(--surface)}
+.step-nav::-webkit-scrollbar{display:none}
+.step-btn{flex-shrink:0;padding:11px 16px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:none;color:var(--text3);border-bottom:3px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}
+.step-btn.on{color:var(--accent);border-bottom-color:var(--accent);background:var(--surface2)}
+.step-btn.done::before{content:'✓ ';color:var(--success)}
+.step-btn:hover:not(.on){color:var(--text2);background:var(--surface3)}
 
-/* ── FORM ELEMENTS ── */
-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text2);display:block;margin-bottom:3px}
-input[type=text],textarea,select{width:100%;font-size:12px;font-family:inherit;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:6px 9px;outline:none;transition:border-color .15s}
+/* ── STEP PANELS ── */
+.step-panels{flex:1;overflow-y:auto;padding:18px 18px 0}
+.step-panel{display:none}
+.step-panel.on{display:block}
+
+/* ── STEP FOOTER (Next / Back) ── */
+.step-footer{border-top:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surface);gap:10px}
+.step-counter{font-size:13px;color:var(--text3)}
+
+/* ── FORM ── */
+label{font-size:13px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px}
+input[type=text],textarea,select{width:100%;font-size:14px;font-family:inherit;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;outline:none;transition:border-color .15s}
 input[type=text]:focus,textarea:focus,select:focus{border-color:var(--accent)}
-input[type=color]{height:28px;padding:2px 3px;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:var(--surface2);width:100%}
-textarea{resize:vertical;line-height:1.6;min-height:72px}
+input[type=color]{height:36px;padding:2px 4px;cursor:pointer;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);width:100%}
+textarea{resize:vertical;line-height:1.6;min-height:84px}
 select option{background:var(--surface2)}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
-.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:6px}
-.fg{display:flex;flex-direction:column;gap:3px;margin-bottom:6px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.section{margin-bottom:22px}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title{font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.04em}
 
 /* ── BUTTONS ── */
-button{font-family:inherit;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px;cursor:pointer;background:var(--surface2);color:var(--text);transition:all .15s}
+button{font-family:inherit;font-size:13px;font-weight:600;border:1px solid var(--border);border-radius:var(--radius);padding:8px 14px;cursor:pointer;background:var(--surface2);color:var(--text);transition:all .15s}
 button:hover{background:var(--surface3);border-color:var(--border2)}
 button:active{transform:scale(.98)}
 button:disabled{opacity:.4;cursor:not-allowed}
-.btn-primary{background:var(--accent);color:#111;border-color:var(--accent);font-size:13px;padding:9px 20px;border-radius:var(--radius-lg)}
-.btn-primary:hover{opacity:.9;background:var(--accent)}
-.btn-danger{color:var(--danger);border-color:var(--danger);background:transparent;font-size:10px;padding:3px 8px}
-.btn-danger:hover{background:var(--danger-bg)}
-.btn-sm{font-size:10px;padding:3px 8px}
-.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+.btn-next{background:var(--accent);color:#111;border-color:var(--accent);font-size:15px;font-weight:700;padding:11px 28px;border-radius:var(--radius-lg)}
+.btn-next:hover{opacity:.9;background:var(--accent)}
+.btn-prev{background:transparent;color:var(--text2);border-color:var(--border);font-size:14px;padding:10px 18px}
+.btn-dl{background:var(--accent);color:#111;border-color:var(--accent);font-size:15px;padding:11px 24px;border-radius:var(--radius-lg);font-weight:700}
+.btn-dl:hover{opacity:.9;background:var(--accent)}
+.btn-rst{color:var(--danger);border-color:var(--danger);background:transparent;font-size:12px;padding:4px 10px}
+.btn-rst:hover{background:var(--danger-bg)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* AI button */
+.btn-ai{background:linear-gradient(135deg,#6644FF,#FF44AA);color:#fff;border:none;font-size:16px;font-weight:700;padding:14px 22px;border-radius:var(--radius-lg);width:100%;margin-bottom:10px;letter-spacing:.02em}
+.btn-ai:hover{opacity:.88}
+.btn-ai:disabled{opacity:.45}
 
 /* ── PILLS ── */
-.pills{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
-.pill{font-size:10px;padding:3px 9px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;white-space:nowrap;user-select:none}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.pill{font-size:13px;padding:6px 14px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;white-space:nowrap;user-select:none}
 .pill:hover{border-color:var(--border2)}
 .pill.on{background:var(--surface3);color:var(--text);border-color:var(--accent)}
-.stag{font-size:10px;padding:2px 8px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2)}
+.stag{font-size:13px;padding:5px 12px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;white-space:nowrap}
 .stag:hover{border-color:var(--accent);color:var(--accent)}
 
-/* ── RANGE SLIDER ── */
-.range-row{display:flex;gap:8px;align-items:center;margin-bottom:5px}
-.range-row label{white-space:nowrap;margin:0;min-width:90px;font-size:10px}
+/* ── RANGE ── */
+.range-row{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.range-row label{white-space:nowrap;margin:0;min-width:116px;font-size:13px}
 .range-row input[type=range]{flex:1;accent-color:var(--accent)}
-.range-row span{font-size:10px;color:var(--text2);min-width:30px;text-align:right}
+.range-row span{font-size:13px;color:var(--text2);min-width:38px;text-align:right}
 
-/* ── PALETTE CARDS ── */
-.pal-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+/* ── PALETTE ── */
+.pal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .pal-card{border:2px solid var(--border);border-radius:var(--radius-lg);cursor:pointer;overflow:hidden;transition:border-color .15s}
 .pal-card:hover{border-color:var(--border2)}
 .pal-card.on{border-color:var(--accent)}
-.pal-swatches{display:flex;height:36px}
-.pal-swatch{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:1px}
-.pal-swatch .hex{font-size:7px;font-weight:700;line-height:1;text-align:center}
-.pal-swatch .sname{font-size:6px;line-height:1;text-align:center;opacity:.7}
-.pal-name{font-size:9px;font-weight:600;color:var(--text2);padding:2px 5px;text-align:center;background:var(--surface)}
+.pal-swatches{display:flex;height:42px}
+.pal-swatch{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1px}
+.pal-swatch .hex{font-size:8px;font-weight:700;line-height:1;text-align:center}
+.pal-swatch .sname{font-size:7px;line-height:1;text-align:center;opacity:.7}
+.pal-name{font-size:11px;font-weight:600;color:var(--text2);padding:4px 6px;text-align:center;background:var(--surface)}
 
-/* ── OVERLAY GRID ── */
-.ov-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-bottom:6px}
-.ov-item{border:1px solid var(--border);border-radius:6px;padding:4px 2px;text-align:center;cursor:pointer;font-size:9px;color:var(--text2);background:var(--surface2);line-height:1.3;user-select:none;transition:all .15s}
+/* ── OVERLAYS ── */
+.ov-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.ov-item{border:1px solid var(--border);border-radius:var(--radius);padding:10px 4px;text-align:center;cursor:pointer;font-size:12px;color:var(--text2);background:var(--surface2);line-height:1.4;user-select:none;transition:all .15s}
 .ov-item:hover{border-color:var(--border2)}
 .ov-item.on{background:var(--surface3);color:var(--text);border-color:var(--accent)}
-.ov-icon{font-size:12px;display:block;margin-bottom:1px}
+.ov-icon{font-size:18px;display:block;margin-bottom:3px}
 
-/* ── FRAME GRID ── */
-.fr-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px}
-.fr-item{border:1px solid var(--border);border-radius:var(--radius);padding:6px 7px;background:var(--surface2)}
+/* ── FRAMES ── */
+.fr-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.fr-item{border:1px solid var(--border);border-radius:var(--radius);padding:10px;background:var(--surface2)}
 .fr-item.on{border-color:var(--border2)}
-.fr-name{font-weight:600;color:var(--text);margin-bottom:4px;font-size:10px}
-.fr-cr{display:flex;gap:5px;align-items:center;margin-bottom:4px}
-.fr-cr label{margin:0;font-size:9px}
-.fr-sides{display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
-.fr-sides button{font-size:9px;padding:3px 2px;border-radius:4px}
+.fr-name{font-weight:700;color:var(--text);margin-bottom:7px;font-size:13px}
+.fr-cr{display:flex;gap:6px;align-items:center;margin-bottom:7px;flex-wrap:wrap}
+.fr-cr label{margin:0;font-size:11px}
+.fr-sides{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+.fr-sides button{font-size:11px;padding:5px 2px;border-radius:5px}
 .fr-sides button.on{background:var(--accent);color:#111;border-color:var(--accent)}
-.fr-src{font-size:8px;padding:1px 5px;border-radius:4px;background:var(--info-bg);color:var(--info)}
+.fr-src{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--info-bg);color:var(--info)}
 .fr-src.manual{background:var(--warn-bg);color:var(--warn)}
 
-/* ── TEXT STYLE GRID ── */
-.ts-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-bottom:6px}
-.ts-item{border:1px solid var(--border);border-radius:6px;padding:4px 2px;text-align:center;cursor:pointer;font-size:9px;color:var(--text2);background:var(--surface2);user-select:none;transition:all .15s;line-height:1.3}
+/* ── TEXT STYLES ── */
+.ts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.ts-item{border:1px solid var(--border);border-radius:var(--radius);padding:10px 4px;text-align:center;cursor:pointer;font-size:12px;color:var(--text2);background:var(--surface2);user-select:none;transition:all .15s;line-height:1.4}
+.ts-item:hover{border-color:var(--border2)}
 .ts-item.on{background:var(--surface3);color:var(--text);border-color:var(--accent)}
+.ts-aa{font-size:17px;display:block;margin-bottom:3px;font-weight:700}
 
-/* ── CTA GRID ── */
-.cta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:6px}
-.cta-item{border:1px solid var(--border);border-radius:6px;padding:4px;text-align:center;cursor:pointer;font-size:9px;color:var(--text2);background:var(--surface2);user-select:none;transition:all .15s}
+/* ── CTA ── */
+.cta-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.cta-item{border:1px solid var(--border);border-radius:var(--radius);padding:12px 8px;text-align:center;cursor:pointer;font-size:14px;font-weight:600;color:var(--text2);background:var(--surface2);user-select:none;transition:all .15s}
+.cta-item:hover{border-color:var(--border2)}
 .cta-item.on{background:var(--surface3);color:var(--text);border-color:var(--accent)}
 
 /* ── COLOUR GRID ── */
-.color-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px}
-.color-item{display:flex;flex-direction:column;gap:2px}
-.color-item label{font-size:9px;text-align:center}
-
-/* ── CANVAS / PREVIEW ── */
-.canvas-wrap{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:#111}
-.canvas-wrap canvas{display:block;width:100%}
-
-/* ── UPLOAD ZONE ── */
-.upload-zone{border:1.5px dashed var(--border);border-radius:var(--radius-lg);padding:12px;text-align:center;cursor:pointer;color:var(--text2);font-size:12px;position:relative;overflow:hidden;margin-bottom:6px;transition:border-color .15s}
-.upload-zone:hover{border-color:var(--accent)}
-.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+.color-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}
+.color-item{display:flex;flex-direction:column;gap:5px;align-items:center}
+.color-item label{font-size:12px;text-align:center}
 
 /* ── SIDE TOG ── */
 .side-tog{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:fit-content}
-.side-tog button{border:none;border-radius:0;padding:5px 14px;font-size:11px;background:var(--surface2);color:var(--text2)}
+.side-tog button{border:none;border-radius:0;padding:10px 22px;font-size:14px;background:var(--surface2);color:var(--text2)}
 .side-tog button.on{background:var(--surface3);color:var(--text)}
 
+/* ── UPLOAD ZONE ── */
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;cursor:pointer;color:var(--text2);font-size:15px;position:relative;overflow:hidden;margin-bottom:10px;transition:border-color .15s}
+.upload-zone:hover{border-color:var(--accent)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+
+/* ── AI PANEL ── */
+.ai-panel{border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;background:var(--surface2);margin-bottom:16px}
+.ai-panel-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.ai-panel-sub{font-size:13px;color:var(--text2);margin-bottom:14px}
+.ai-check-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.ai-check{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text2);cursor:pointer}
+.ai-check input[type=checkbox]{width:17px;height:17px;cursor:pointer;accent-color:var(--accent)}
+.ai-status{font-size:13px;color:var(--text2);min-height:20px;margin-top:8px;padding:0 2px}
+
+/* ── CANVAS + ZOOM ── */
+.zoom-row{display:flex;gap:10px;align-items:center}
+.zoom-row label{font-size:13px;color:var(--text2);white-space:nowrap}
+.zoom-row input[type=range]{flex:1;accent-color:var(--accent)}
+.zoom-row span{font-size:13px;color:var(--text2);min-width:38px;text-align:right}
+.zoom-btns{display:flex;gap:4px}
+.zoom-btns button{font-size:12px;padding:5px 10px}
+
 /* ── STATUS ── */
-.status{font-size:11px;padding:8px 12px;border-radius:var(--radius);margin-bottom:8px;display:none}
+.status{font-size:13px;padding:10px 14px;border-radius:var(--radius);margin-bottom:10px;display:none}
 .status.show{display:block}
 .status.info{background:var(--info-bg);color:var(--info)}
 .status.success{background:var(--success-bg);color:var(--success)}
@@ -148,217 +187,288 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .status.err{background:var(--danger-bg);color:var(--danger)}
 
 /* ── BG REMOVER ── */
-.preview-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.preview-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .preview-box{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:repeating-conic-gradient(#444 0% 25%,#333 0% 50%) 0 0/16px 16px;min-height:120px;display:flex;align-items:center;justify-content:center}
-.preview-box canvas{max-width:100%;max-height:180px;display:block;object-fit:contain}
-.preview-label{font-size:9px;color:var(--text2);text-align:center;padding:3px;background:var(--surface)}
-.method-tabs{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:8px}
-.method-tabs button{border:none;border-radius:0;padding:5px 12px;font-size:11px;background:var(--surface2);color:var(--text2);flex:1}
+.preview-box canvas{max-width:100%;max-height:200px;display:block}
+.preview-label{font-size:12px;color:var(--text2);text-align:center;padding:4px;background:var(--surface)}
+.method-tabs{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px}
+.method-tabs button{border:none;border-radius:0;padding:10px 14px;font-size:14px;font-weight:600;background:var(--surface2);color:var(--text2);flex:1}
 .method-tabs button.on{background:var(--surface3);color:var(--text)}
-.steps{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
-.step{font-size:10px;padding:3px 9px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
-.step.active{background:var(--surface3);color:var(--text);border-color:var(--accent)}
-.step.done{background:var(--success-bg);color:var(--success);border-color:currentColor}
+.br-steps{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.br-step{font-size:13px;padding:5px 14px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.br-step.active{background:var(--surface3);color:var(--text);border-color:var(--accent)}
+.br-step.done{background:var(--success-bg);color:var(--success);border-color:currentColor}
 
 /* ── SCROLLBAR ── */
-::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--surface)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-
-/* ── RESPONSIVE ── */
-@media(max-width:768px){
-  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
-  .topbar{grid-column:1}
-  .sidebar{max-height:50vh}
-}
 </style>
 </head>
 <body>
-
 <div class="app">
 
-<!-- TOP BAR -->
+<!-- TOPBAR -->
 <div class="topbar">
   <div>
     <h1>RewindPPF</h1>
-    <div style="font-size:11px;color:var(--text2);margin-top:1px">Facebook Marketplace Poster Generator</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:1px">Facebook Marketplace Poster Generator</div>
   </div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <span style="font-size:10px;color:var(--text3)">Calgary, AB · Auto Detailing</span>
-    <a href="https://github.com" target="_blank" style="font-size:10px;color:var(--text2);border:1px solid var(--border);padding:3px 8px;border-radius:6px">⭐ Star on GitHub</a>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span style="font-size:12px;color:var(--text3)">Calgary, AB · Auto Detailing</span>
+    <a href="https://github.com" target="_blank" style="font-size:12px;color:var(--text2);border:1px solid var(--border);padding:4px 10px;border-radius:6px">⭐ GitHub</a>
   </div>
 </div>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-  <div class="tabs">
-    <button class="tab on" onclick="switchTab('poster')">🖼️ Poster</button>
-    <button class="tab" onclick="switchTab('bgremove')">✂️ BG Remove</button>
+<div class="body">
+
+<!-- ═══ SIDEBAR ═══ -->
+<div class="sidebar" id="sidebar">
+
+  <!-- Mode tabs: Poster / BG Remove -->
+  <div class="mode-tabs">
+    <button class="mode-tab on" onclick="switchMode('poster')" id="mtab-poster">🖼️ Poster</button>
+    <button class="mode-tab" onclick="switchMode('bgremove')" id="mtab-bgremove">✂️ BG Remove</button>
   </div>
 
-  <!-- ════ POSTER TAB ════ -->
-  <div class="tab-content on" id="tab-poster">
+  <!-- ══ POSTER MODE ══ -->
+  <div class="mode-content on" id="mode-poster">
 
-    <!-- Photo -->
-    <div class="section">
-      <h3>📷 Background Photo</h3>
-      <div class="upload-zone" id="upload-zone">
-        <input type="file" accept="image/*" onchange="loadBg(this)">
-        <span id="bg-lbl">Tap to upload car / job photo</span>
-      </div>
-      <div class="range-row"><label>Brightness</label><input type="range" id="bg-bright" min="60" max="160" value="110" oninput="draw()"><span id="bb-val">110%</span></div>
+    <!-- Step navigation pills -->
+    <div class="step-nav" id="step-nav">
+      <button class="step-btn on" onclick="goStep(0)" id="snav-0">📷 Photo</button>
+      <button class="step-btn" onclick="goStep(1)" id="snav-1">🎨 Palette</button>
+      <button class="step-btn" onclick="goStep(2)" id="snav-2">✏️ Text</button>
+      <button class="step-btn" onclick="goStep(3)" id="snav-3">🎭 Style</button>
+      <button class="step-btn" onclick="goStep(4)" id="snav-4">🌫️ Overlay</button>
+      <button class="step-btn" onclick="goStep(5)" id="snav-5">🖼️ Frame</button>
+      <button class="step-btn" onclick="goStep(6)" id="snav-6">✨ AI Generate</button>
     </div>
 
-    <!-- Palette -->
-    <div class="section">
-      <div class="section-header">
-        <h3>🎨 Colour Palette</h3>
-        <button class="btn-danger btn-sm" onclick="resetPalette()">↺</button>
-      </div>
-      <div class="pal-grid" id="pal-grid"></div>
-    </div>
+    <!-- Step panels -->
+    <div class="step-panels">
 
-    <!-- Title -->
-    <div class="section">
-      <div class="section-header"><h3>Title</h3><button class="btn-danger btn-sm" onclick="resetTitle()">↺</button></div>
-      <div class="g2">
-        <div class="fg"><label>Line 1</label><input id="line1" value="PREMIUM" oninput="draw()"></div>
-        <div class="fg"><label>Line 2</label><input id="line2" value="VINYL WRAP" oninput="draw()"></div>
+      <!-- STEP 0: Photo -->
+      <div class="step-panel on" id="sp-0">
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">📷 Background Photo</span></div>
+          <div class="upload-zone" id="upload-zone">
+            <input type="file" accept="image/*" onchange="loadBg(this)">
+            <div style="font-size:28px;margin-bottom:6px">📷</div>
+            <div>Tap or drag to upload your car / job photo</div>
+            <div style="font-size:12px;margin-top:4px;opacity:.5">JPG · PNG · WEBP</div>
+            <div id="bg-lbl" style="font-size:13px;margin-top:6px;color:var(--success)"></div>
+          </div>
+          <div class="range-row"><label>Brightness</label><input type="range" id="bg-bright" min="60" max="160" value="110" oninput="draw()"><span id="bb-val">110%</span></div>
+        </div>
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">🏪 Shop Info</span></div>
+          <div class="g2">
+            <div class="fg"><label>Shop Name</label><input id="shop" value="RewindPPF" oninput="draw()"></div>
+            <div class="fg"><label>Location</label><input id="location" value="Calgary, AB" oninput="draw()"></div>
+          </div>
+          <div class="section-hdr" style="margin-top:4px"><span class="section-title">Text Position</span><button class="btn-rst" onclick="setTextSide('left')">↺</button></div>
+          <div class="side-tog" id="side-tog">
+            <button class="on" onclick="setTextSide('left')">◀ Left</button>
+            <button onclick="setTextSide('right')">Right ▶</button>
+          </div>
+        </div>
       </div>
-      <div class="pills" id="title-pills"></div>
-      <div class="range-row"><label>Letter Spacing</label><input type="range" id="title-spacing" min="0" max="30" value="0" oninput="draw()"><span id="sp-val">0px</span></div>
-    </div>
 
-    <!-- Tagline -->
-    <div class="section">
-      <div class="section-header"><h3>Tagline</h3><button class="btn-danger btn-sm" onclick="resetTagline()">↺</button></div>
-      <div class="fg"><label>Text</label><input id="tagline" value="Transform Your Vehicle. Protect the Original Paint." oninput="draw()"></div>
-      <div class="fg"><label>Quick Preset</label>
-        <select id="tagline-sel" onchange="if(this.value){document.getElementById('tagline').value=this.value;draw();}this.value=''">
-          <option value="">— select preset —</option>
-        </select>
+      <!-- STEP 1: Palette -->
+      <div class="step-panel" id="sp-1">
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">🎨 Colour Palette</span><button class="btn-rst" onclick="resetPalette()">↺</button></div>
+          <p style="font-size:13px;color:var(--text3);margin-bottom:12px">Pick a palette — it applies to all text + frame colours automatically.</p>
+          <div class="pal-grid" id="pal-grid"></div>
+        </div>
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">Accent Colour</span><button class="btn-rst" onclick="setAcc('red')">↺</button></div>
+          <div class="pills" id="acc-pills">
+            <span class="pill on" onclick="setAcc('red')" id="ac-red">🔴 Red</span>
+            <span class="pill" onclick="setAcc('gold')" id="ac-gold">🟡 Gold</span>
+            <span class="pill" onclick="setAcc('blue')" id="ac-blue">🔵 Blue</span>
+            <span class="pill" onclick="setAcc('green')" id="ac-green">🟢 Green</span>
+            <span class="pill" onclick="setAcc('cyan')" id="ac-cyan">🩵 Cyan</span>
+            <span class="pill" onclick="setAcc('white')" id="ac-white">⚪ White</span>
+            <span class="pill" onclick="setAcc('orange')" id="ac-orange">🟠 Orange</span>
+            <span class="pill" onclick="setAcc('purple')" id="ac-purple">🟣 Purple</span>
+            <span class="pill" onclick="setAcc('pink')" id="ac-pink">🩷 Pink</span>
+            <span class="pill" onclick="setAcc('lime')" id="ac-lime">💚 Lime</span>
+          </div>
+          <div class="fg"><label>Custom Accent</label><input type="color" id="c-accent" value="#FF2020" oninput="setAccCustom()"></div>
+        </div>
       </div>
-    </div>
 
-    <!-- Description -->
-    <div class="section">
-      <div class="section-header"><h3>Description <span style="font-size:9px;color:var(--text3)">**word** = bold</span></h3><button class="btn-danger btn-sm" onclick="resetDesc()">↺</button></div>
-      <div class="fg"><label>Custom (one per line · max 3)</label>
-        <textarea id="desc" oninput="draw()">**Full Vehicle** or Partial Wrap — Hood, Roof, Mirrors
+      <!-- STEP 2: Text -->
+      <div class="step-panel" id="sp-2">
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">Title</span><button class="btn-rst" onclick="resetTitle()">↺</button></div>
+          <div class="g2">
+            <div class="fg"><label>Line 1</label><input id="line1" value="PREMIUM" oninput="draw()"></div>
+            <div class="fg"><label>Line 2</label><input id="line2" value="VINYL WRAP" oninput="draw()"></div>
+          </div>
+          <div class="fg"><label>Quick Service Pick</label><div class="pills" id="title-pills"></div></div>
+          <div class="range-row"><label>Letter Spacing</label><input type="range" id="title-spacing" min="0" max="30" value="0" oninput="draw()"><span id="sp-val">0px</span></div>
+        </div>
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">Tagline</span><button class="btn-rst" onclick="resetTagline()">↺</button></div>
+          <div class="fg"><label>Text</label><input id="tagline" value="Transform Your Vehicle. Protect the Original Paint." oninput="draw()"></div>
+          <div class="fg"><label>Preset</label>
+            <select id="tagline-sel" onchange="if(this.value){document.getElementById('tagline').value=this.value;draw();}this.value=''">
+              <option value="">— select a preset —</option>
+            </select>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">Description <span style="font-size:11px;font-weight:400;color:var(--text3)">**word** = bold</span></span><button class="btn-rst" onclick="resetDesc()">↺</button></div>
+          <div class="fg"><label>Custom (one per line · max 3 shown)</label>
+            <textarea id="desc" oninput="draw()">**Full Vehicle** or Partial Wrap — Hood, Roof, Mirrors
 **Gloss / Matte / Satin** Finishes Available
 **Carbon Fiber** & Custom Colour Matching</textarea>
+          </div>
+          <div class="fg"><label>Service Preset</label>
+            <select id="desc-sel" onchange="pickDesc(this.value)">
+              <option value="">— select a preset —</option>
+            </select>
+          </div>
+        </div>
       </div>
-      <div class="fg"><label>Preset per service</label>
-        <select id="desc-sel" onchange="pickDesc(this.value)">
-          <option value="">— select preset —</option>
-        </select>
+
+      <!-- STEP 3: Style -->
+      <div class="step-panel" id="sp-3">
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">Text Colours</span><button class="btn-rst" onclick="resetTextColors()">↺</button></div>
+          <div class="color-grid">
+            <div class="color-item"><label>Title</label><input type="color" id="c-title" value="#ffffff" oninput="draw()"></div>
+            <div class="color-item"><label>Tagline</label><input type="color" id="c-tagline" value="#f0f0f0" oninput="draw()"></div>
+            <div class="color-item"><label>Bullets</label><input type="color" id="c-bullets" value="#e8e8e8" oninput="draw()"></div>
+            <div class="color-item"><label>Bold</label><input type="color" id="c-bold" value="#E8B84B" oninput="draw()"></div>
+            <div class="color-item"><label>CTA</label><input type="color" id="c-cta" value="#E8B84B" oninput="draw()"></div>
+          </div>
+          <div class="range-row"><label>Shadow Blur</label><input type="range" id="txt-shadow" min="0" max="40" value="20" oninput="draw()"><span id="tsh-val">20</span></div>
+          <div class="range-row"><label>Outline Width</label><input type="range" id="txt-outline" min="0" max="8" value="0" oninput="draw()"><span id="tol-val">0</span></div>
+          <div class="fg"><label>Outline Colour</label><input type="color" id="c-outline" value="#000000" oninput="draw()"></div>
+        </div>
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">Text Style</span><button class="btn-rst" onclick="resetTextStyle()">↺</button></div>
+          <div class="ts-grid" id="ts-grid"></div>
+        </div>
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">CTA Button Style</span><button class="btn-rst" onclick="resetCTA()">↺</button></div>
+          <div class="cta-grid" id="cta-grid"></div>
+        </div>
       </div>
-    </div>
 
-    <!-- Shop -->
-    <div class="g2">
-      <div class="fg"><label>Shop Name</label><input id="shop" value="RewindPPF" oninput="draw()"></div>
-      <div class="fg"><label>Location</label><input id="location" value="Calgary, AB" oninput="draw()"></div>
-    </div>
-
-    <!-- Text side -->
-    <div class="section">
-      <div class="section-header"><h3>Text Position</h3><button class="btn-danger btn-sm" onclick="setTextSide('left')">↺</button></div>
-      <div class="side-tog" id="side-tog">
-        <button class="on" onclick="setTextSide('left')">◀ Left</button>
-        <button onclick="setTextSide('right')">Right ▶</button>
+      <!-- STEP 4: Overlay -->
+      <div class="step-panel" id="sp-4">
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">🌫️ Overlay Layers</span><button class="btn-rst" onclick="resetOverlays()">↺</button></div>
+          <p style="font-size:13px;color:var(--text3);margin-bottom:12px">Multi-select — combine overlays for unique looks.</p>
+          <div class="ov-grid" id="ov-grid"></div>
+          <div class="range-row"><label>Darkness</label><input type="range" id="ov-int" min="0" max="100" value="55" oninput="draw()"><span id="ov-val">55%</span></div>
+        </div>
       </div>
-    </div>
 
-    <!-- Text colours -->
-    <div class="section">
-      <div class="section-header"><h3>Text Colours</h3><button class="btn-danger btn-sm" onclick="resetTextColors()">↺</button></div>
-      <div class="color-grid">
-        <div class="color-item"><label>Title</label><input type="color" id="c-title" value="#ffffff" oninput="draw()"></div>
-        <div class="color-item"><label>Tagline</label><input type="color" id="c-tagline" value="#f0f0f0" oninput="draw()"></div>
-        <div class="color-item"><label>Bullets</label><input type="color" id="c-bullets" value="#e8e8e8" oninput="draw()"></div>
-        <div class="color-item"><label>Bold</label><input type="color" id="c-bold" value="#E8B84B" oninput="draw()"></div>
-        <div class="color-item"><label>CTA</label><input type="color" id="c-cta" value="#E8B84B" oninput="draw()"></div>
+      <!-- STEP 5: Frame -->
+      <div class="step-panel" id="sp-5">
+        <div class="section">
+          <div class="section-hdr"><span class="section-title">🖼️ Frame & Deco</span><button class="btn-rst" onclick="resetFrames()">↺</button></div>
+          <p style="font-size:13px;color:var(--text3);margin-bottom:12px">Colours follow your active palette. Use the picker to override per frame.</p>
+          <div class="fr-grid" id="fr-grid"></div>
+        </div>
       </div>
-      <div class="range-row"><label>Shadow Blur</label><input type="range" id="txt-shadow" min="0" max="40" value="20" oninput="draw()"><span id="tsh-val">20</span></div>
-      <div class="range-row"><label>Outline Width</label><input type="range" id="txt-outline" min="0" max="8" value="0" oninput="draw()"><span id="tol-val">0</span></div>
-      <div class="g2"><div class="fg"><label>Outline Colour</label><input type="color" id="c-outline" value="#000000" oninput="draw()"></div></div>
-    </div>
 
-    <!-- Text style -->
-    <div class="section">
-      <div class="section-header"><h3>Text Style</h3><button class="btn-danger btn-sm" onclick="resetTextStyle()">↺</button></div>
-      <div class="ts-grid" id="ts-grid"></div>
-    </div>
-
-    <!-- CTA -->
-    <div class="section">
-      <div class="section-header"><h3>CTA Button Style</h3><button class="btn-danger btn-sm" onclick="resetCTA()">↺</button></div>
-      <div class="cta-grid" id="cta-grid"></div>
-    </div>
-
-    <!-- Accent -->
-    <div class="section">
-      <div class="section-header"><h3>Accent Colour</h3><button class="btn-danger btn-sm" onclick="setAcc('red')">↺</button></div>
-      <div class="pills" id="acc-pills">
-        <span class="pill on" onclick="setAcc('red')" id="ac-red">🔴 Red</span>
-        <span class="pill" onclick="setAcc('gold')" id="ac-gold">🟡 Gold</span>
-        <span class="pill" onclick="setAcc('blue')" id="ac-blue">🔵 Blue</span>
-        <span class="pill" onclick="setAcc('green')" id="ac-green">🟢 Green</span>
-        <span class="pill" onclick="setAcc('cyan')" id="ac-cyan">🩵 Cyan</span>
-        <span class="pill" onclick="setAcc('white')" id="ac-white">⚪ White</span>
-        <span class="pill" onclick="setAcc('orange')" id="ac-orange">🟠 Orange</span>
-        <span class="pill" onclick="setAcc('purple')" id="ac-purple">🟣 Purple</span>
-        <span class="pill" onclick="setAcc('pink')" id="ac-pink">🩷 Pink</span>
-        <span class="pill" onclick="setAcc('lime')" id="ac-lime">💚 Lime</span>
+      <!-- STEP 6: AI Generate -->
+      <div class="step-panel" id="sp-6">
+        <div class="ai-panel">
+          <div class="ai-panel-title">✨ AI Generate <span style="font-size:11px;font-weight:600;background:linear-gradient(135deg,#6644FF,#FF44AA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;padding:2px 8px;border:1px solid #6644FF;border-radius:20px;-webkit-text-fill-color:#fff;background:linear-gradient(135deg,#6644FF,#FF44AA);">Powered by Claude</span></div>
+          <div class="ai-panel-sub">Pick a service + mood, check what to randomise, then hit Generate.</div>
+          <div class="g2">
+            <div class="fg">
+              <label>Service</label>
+              <select id="ai-service">
+                <option value="vinyl">Vinyl Wrap</option>
+                <option value="ppf">PPF</option>
+                <option value="ceramic">Ceramic Coating</option>
+                <option value="chrome">Chrome Delete</option>
+                <option value="headlight">Headlight Restore</option>
+                <option value="roof">Roof Blackout</option>
+                <option value="undercoat">Undercoating</option>
+                <option value="polish">Polish & Detail</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Mood / Vibe</label>
+              <select id="ai-mood">
+                <option value="bold">Bold & Aggressive</option>
+                <option value="premium">Premium & Luxury</option>
+                <option value="clean">Clean & Minimal</option>
+                <option value="dark">Dark & Moody</option>
+                <option value="bright">Bright & Eye-Catching</option>
+                <option value="stealth">Stealth & Dark</option>
+                <option value="sport">Sport & Racing</option>
+                <option value="random">Surprise Me 🎲</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:14px">
+            <label style="margin-bottom:8px">Randomise these elements:</label>
+            <div class="ai-check-row">
+              <label class="ai-check"><input type="checkbox" id="ai-title" checked> Title</label>
+              <label class="ai-check"><input type="checkbox" id="ai-tagline" checked> Tagline</label>
+              <label class="ai-check"><input type="checkbox" id="ai-desc" checked> Description</label>
+              <label class="ai-check"><input type="checkbox" id="ai-palette" checked> Palette</label>
+              <label class="ai-check"><input type="checkbox" id="ai-overlay" checked> Overlays</label>
+              <label class="ai-check"><input type="checkbox" id="ai-frame" checked> Frames</label>
+              <label class="ai-check"><input type="checkbox" id="ai-cta" checked> CTA Style</label>
+              <label class="ai-check"><input type="checkbox" id="ai-textstyle"> Text Style</label>
+            </div>
+          </div>
+          <button class="btn-ai" id="ai-gen-btn" onclick="aiGenerate()">✨ Generate Random Combo</button>
+          <div class="ai-status" id="ai-status"></div>
+        </div>
+        <button class="btn-rst" onclick="resetAll()" style="width:100%;font-size:14px;padding:10px">↺ Reset Everything</button>
       </div>
-      <div class="fg"><label>Custom</label><input type="color" id="c-accent" value="#FF2020" oninput="setAccCustom()"></div>
+
+    </div><!-- /step-panels -->
+
+    <!-- Step footer with Next / Back -->
+    <div class="step-footer">
+      <button class="btn-prev" id="btn-prev" onclick="stepNav(-1)">← Back</button>
+      <span class="step-counter" id="step-counter">Step 1 of 7</span>
+      <button class="btn-next" id="btn-next" onclick="stepNav(1)">Next →</button>
     </div>
 
-    <!-- Overlays -->
-    <div class="section">
-      <div class="section-header"><h3>Overlay Layers <span style="font-size:9px;color:var(--text3)">multi-select</span></h3><button class="btn-danger btn-sm" onclick="resetOverlays()">↺</button></div>
-      <div class="ov-grid" id="ov-grid"></div>
-      <div class="range-row"><label>Darkness</label><input type="range" id="ov-int" min="0" max="100" value="55" oninput="draw()"><span id="ov-val">55%</span></div>
-    </div>
+  </div><!-- /mode-poster -->
 
-    <!-- Frames -->
-    <div class="section">
-      <div class="section-header"><h3>Frame & Deco <span style="font-size:9px;color:var(--text3)">T R B L</span></h3><button class="btn-danger btn-sm" onclick="resetFrames()">↺</button></div>
-      <p style="font-size:10px;color:var(--text3);margin-bottom:6px">Colours follow active palette. Use picker to override per frame.</p>
-      <div class="fr-grid" id="fr-grid"></div>
-    </div>
+  <!-- ══ BG REMOVE MODE ══ -->
+  <div class="mode-content" id="mode-bgremove" style="padding:18px;overflow-y:auto">
+    <div style="font-size:16px;font-weight:700;margin-bottom:6px">✂️ Background Remover</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">100% free · works offline · no AI needed. Remove background then use photo in your poster.</p>
 
-    <button class="btn-danger" onclick="resetAll()" style="width:100%;margin-top:4px">↺ Reset All</button>
-
-  </div><!-- /poster tab -->
-
-  <!-- ════ BG REMOVE TAB ════ -->
-  <div class="tab-content" id="tab-bgremove">
-    <h3 style="margin-bottom:6px">✂️ Background Remover</h3>
-    <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Upload a car photo and remove the background — 100% free, works offline, no AI needed.</p>
-
-    <div class="steps">
-      <div class="step active" id="br-step1">① Upload</div>
-      <div class="step" id="br-step2">② Remove BG</div>
-      <div class="step" id="br-step3">③ Use in Poster</div>
+    <div class="br-steps">
+      <div class="br-step active" id="br-step1">① Upload</div>
+      <div class="br-step" id="br-step2">② Remove BG</div>
+      <div class="br-step" id="br-step3">③ Use in Poster</div>
     </div>
 
     <div class="upload-zone" id="br-upload">
       <input type="file" accept="image/*" id="br-input" onchange="brLoad(this)">
-      <div>📷 Tap to upload car photo</div>
-      <div style="font-size:10px;margin-top:3px;opacity:.5">JPG · PNG · WEBP</div>
+      <div style="font-size:26px;margin-bottom:6px">📷</div>
+      <div style="font-size:14px">Tap to upload car photo</div>
+      <div style="font-size:12px;margin-top:3px;opacity:.5">JPG · PNG · WEBP</div>
     </div>
 
     <div id="br-controls" style="display:none">
       <div class="method-tabs">
-        <button class="on" onclick="brSetMethod('color')" id="brm-color">🎨 Colour</button>
+        <button class="on" onclick="brSetMethod('color')" id="brm-color">🎨 Colour Tolerance</button>
         <button onclick="brSetMethod('edge')" id="brm-edge">✂️ Edge Cut</button>
       </div>
 
       <div id="br-opts-color">
-        <div id="br-click-hint" style="font-size:10px;color:var(--info);background:var(--info-bg);padding:6px 9px;border-radius:6px;margin-bottom:6px">
-          👆 Click on a background area in the Original preview to sample its colour
+        <div id="br-click-hint" style="font-size:13px;color:var(--info);background:var(--info-bg);padding:10px 12px;border-radius:var(--radius);margin-bottom:10px">
+          👆 Click on a background area in the Original image to sample its colour
         </div>
         <div class="range-row"><label>Colour Tolerance</label><input type="range" id="br-tol" min="5" max="120" value="40" oninput="brUpdatePreview()"><span id="br-tol-val">40</span></div>
         <div class="range-row"><label>Edge Feather</label><input type="range" id="br-feather" min="0" max="15" value="3" oninput="brUpdatePreview()"><span id="br-feath-val">3px</span></div>
@@ -370,63 +480,65 @@ button:disabled{opacity:.4;cursor:not-allowed}
       </div>
 
       <div class="preview-row">
-        <div>
-          <div class="preview-label">Original</div>
-          <div class="preview-box"><canvas id="br-orig"></canvas></div>
-        </div>
-        <div>
-          <div class="preview-label">Result</div>
-          <div class="preview-box"><canvas id="br-result"></canvas></div>
-        </div>
+        <div><div class="preview-label">Original</div><div class="preview-box"><canvas id="br-orig"></canvas></div></div>
+        <div><div class="preview-label">Result</div><div class="preview-box"><canvas id="br-result"></canvas></div></div>
       </div>
 
       <div class="status" id="br-status"></div>
-
-      <div class="btn-row">
-        <button class="btn-primary" id="br-remove-btn" onclick="brRemove()" style="font-size:12px;padding:7px 16px">✂️ Remove Background</button>
+      <div class="btn-row" style="margin-bottom:10px">
+        <button class="btn-next" id="br-remove-btn" onclick="brRemove()" style="padding:11px 20px;font-size:14px">✂️ Remove Background</button>
         <button onclick="brReset()">↺ Reset</button>
       </div>
-      <div id="br-after-btns" style="display:none">
-        <div class="btn-row" style="margin-top:4px">
-          <button onclick="brUseInPoster()" style="background:var(--success-bg);color:var(--success);border-color:var(--success)">✅ Use in Poster</button>
-          <button onclick="brDownload()">⬇ Download PNG</button>
-        </div>
+      <div id="br-after-btns" style="display:none" class="btn-row">
+        <button onclick="brUseInPoster()" style="background:var(--success-bg);color:var(--success);border-color:var(--success);font-size:14px;padding:10px 16px">✅ Use in Poster</button>
+        <button onclick="brDownload()" style="font-size:14px;padding:10px 16px">⬇ Download PNG</button>
       </div>
     </div>
     <canvas id="br-work" style="display:none"></canvas>
-  </div><!-- /bgremove tab -->
+  </div><!-- /mode-bgremove -->
 
 </div><!-- /sidebar -->
 
-<!-- MAIN AREA -->
+<!-- DRAG DIVIDER -->
+<div class="divider" id="divider"></div>
+
+<!-- ═══ MAIN PREVIEW ═══ -->
 <div class="main">
-  <div style="display:flex;align-items:center;justify-content:space-between">
-    <h2 style="margin:0">Preview <span style="font-size:11px;color:var(--text3);font-weight:400">1200 × 900px</span></h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:16px;font-weight:700">Preview <span style="font-size:13px;font-weight:400;color:var(--text3)">1200 × 900px</span></div>
+    </div>
     <div class="btn-row" style="margin:0">
-      <button class="btn-primary" id="dl-btn" onclick="dlImg()">⬇ Download PNG</button>
-      <button onclick="cpyCap()">📋 Copy Caption</button>
+      <button class="btn-dl" id="dl-btn" onclick="dlImg()">⬇ Download PNG</button>
+      <button onclick="cpyCap()" style="font-size:14px;padding:10px 16px">📋 Copy Caption</button>
     </div>
   </div>
-  <div class="canvas-wrap"><canvas id="cv" width="1200" height="900"></canvas></div>
-  <p style="font-size:10px;color:var(--text3)">1200×900 landscape — Facebook Marketplace ready. All processing is local — no data is sent anywhere.</p>
 
-  <!-- GitHub setup instructions -->
-  <details style="border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;background:var(--surface)">
-    <summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--accent)">📦 How to deploy this to GitHub Pages (free hosting)</summary>
-    <div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.8">
-      <ol style="margin-left:16px">
-        <li>Go to <a href="https://github.com" target="_blank">github.com</a> and create a free account</li>
-        <li>Click <b>New repository</b> → name it <code style="background:var(--surface2);padding:1px 5px;border-radius:4px">rewindppf</code> → Public → Create</li>
-        <li>Click <b>Add file → Upload files</b> → drag this <code>index.html</code> file → Commit changes</li>
-        <li>Go to <b>Settings → Pages → Source: Deploy from branch → main → / (root)</b> → Save</li>
-        <li>Wait ~1 min → Your app is live at <code style="background:var(--surface2);padding:1px 5px;border-radius:4px">yourusername.github.io/rewindppf</code></li>
-      </ol>
-      <p style="margin-top:8px;color:var(--text3)">✅ Free forever · ✅ No server needed · ✅ Automatic HTTPS · ✅ Custom domain supported</p>
+  <!-- Zoom -->
+  <div class="zoom-row">
+    <label>🔍 Zoom</label>
+    <input type="range" id="zoom-slider" min="20" max="100" value="100" oninput="setZoom(this.value)">
+    <span id="zoom-val">100%</span>
+    <div class="zoom-btns">
+      <button onclick="setZoom(33)">⅓</button>
+      <button onclick="setZoom(50)">½</button>
+      <button onclick="setZoom(75)">¾</button>
+      <button onclick="setZoom(100)">1×</button>
     </div>
-  </details>
-</div>
+  </div>
 
+  <!-- Canvas -->
+  <div style="overflow:hidden;border-radius:var(--radius-lg);border:1px solid var(--border);background:#0a0a0a">
+    <div id="canvas-sizer" style="width:100%">
+      <canvas id="cv" width="1200" height="900" style="display:block;width:100%;height:auto"></canvas>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--text3)">Canvas always renders at 1200×900px — zoom is display only. Download exports full resolution.</p>
+</div><!-- /main -->
+
+</div><!-- /body -->
 </div><!-- /app -->
+
 
 <script>
 // ════════════════════════════════════════════════
@@ -477,10 +589,102 @@ FRAMES.forEach(f=>{frameState[f.id]={sides:new Set(),manualColor:null};});
 // ════════════════════════════════════════════════
 // HELPERS
 // ════════════════════════════════════════════════
-function getFrameColor(id){const fs=frameState[id];if(fs.manualColor)return fs.manualColor;if(activePalId){const p=PALETTES.find(x=>x.id===activePalId);if(p){const idx=FRAME_PAL_ROLE[id]??2;return p.sw[idx]||p.sw[2];}}return FRAMES.find(f=>f.id===id)?.defColor||'#FF2020';}
-function syncFramePickerUI(id){const c=getFrameColor(id);const inp=document.getElementById('frc-'+id);const src=document.getElementById('frsrc-'+id);if(inp)inp.value=c;if(src){const m=!!frameState[id].manualColor;src.textContent=m?'manual':'palette';src.className='fr-src'+(m?' manual':'');}}
-function switchTab(t){document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',['poster','bgremove'][i]===t));document.querySelectorAll('.tab-content').forEach((c,i)=>c.classList.toggle('on',['tab-poster','tab-bgremove'][i]==='tab-'+t));}
-function setStep(n,[s1,s2,s3]=[`br-step1`,`br-step2`,`br-step3`]){[s1,s2,s3].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.className='step'+(i+1<n?' done':i+1===n?' active':'');});}
+// ── RESIZABLE DIVIDER ──
+(function(){
+  const divider=document.getElementById('divider');
+  const sidebar=document.getElementById('sidebar');
+  const body=document.querySelector('.body');
+  if(!divider||!sidebar)return;
+  let dragging=false,startX=0,startW=0;
+  divider.addEventListener('mousedown',e=>{dragging=true;startX=e.clientX;startW=sidebar.offsetWidth;divider.classList.add('dragging');document.body.style.cursor='col-resize';document.body.style.userSelect='none';e.preventDefault();});
+  document.addEventListener('mousemove',e=>{if(!dragging)return;const dx=e.clientX-startX;const newW=Math.max(280,Math.min(startW+dx,body.offsetWidth*0.75));sidebar.style.width=newW+'px';});
+  document.addEventListener('mouseup',()=>{if(!dragging)return;dragging=false;divider.classList.remove('dragging');document.body.style.cursor='';document.body.style.userSelect='';});
+  divider.addEventListener('touchstart',e=>{const t=e.touches[0];dragging=true;startX=t.clientX;startW=sidebar.offsetWidth;e.preventDefault();},{passive:false});
+  document.addEventListener('touchmove',e=>{if(!dragging)return;const t=e.touches[0];const dx=t.clientX-startX;const newW=Math.max(280,Math.min(startW+dx,body.offsetWidth*0.75));sidebar.style.width=newW+'px';});
+  document.addEventListener('touchend',()=>{dragging=false;});
+  sidebar.style.width=Math.min(440,Math.round(window.innerWidth*0.38))+'px';
+})();
+
+// ── ZOOM ──
+function setZoom(val){val=parseInt(val);document.getElementById('zoom-slider').value=val;document.getElementById('zoom-val').textContent=val+'%';document.getElementById('canvas-sizer').style.width=val+'%';}
+
+// ── MODE TABS (Poster / BG Remove) ──
+function switchMode(m){
+  ['poster','bgremove'].forEach(x=>{
+    document.getElementById('mtab-'+x).classList.toggle('on',x===m);
+    document.getElementById('mode-'+x).classList.toggle('on',x===m);
+  });
+}
+
+// ── STEPPED NAV ──
+let currentStep=0;
+const TOTAL_STEPS=7;
+function goStep(n){
+  currentStep=Math.max(0,Math.min(n,TOTAL_STEPS-1));
+  document.querySelectorAll('.step-panel').forEach((p,i)=>p.classList.toggle('on',i===currentStep));
+  document.querySelectorAll('.step-btn').forEach((b,i)=>{
+    b.classList.remove('on','done');
+    if(i===currentStep)b.classList.add('on');
+    else if(i<currentStep)b.classList.add('done');
+  });
+  document.getElementById('step-counter').textContent=`Step ${currentStep+1} of ${TOTAL_STEPS}`;
+  document.getElementById('btn-prev').style.opacity=currentStep===0?'0.3':'1';
+  document.getElementById('btn-prev').disabled=currentStep===0;
+  const nextBtn=document.getElementById('btn-next');
+  if(currentStep===TOTAL_STEPS-1){nextBtn.textContent='✓ Done';nextBtn.onclick=()=>{};}
+  else{nextBtn.textContent='Next →';nextBtn.onclick=()=>stepNav(1);}
+  // scroll step nav to show active tab
+  const activeTab=document.getElementById('snav-'+currentStep);
+  if(activeTab)activeTab.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  // scroll panels to top
+  document.querySelector('.step-panels').scrollTop=0;
+}
+function stepNav(dir){goStep(currentStep+dir);}
+
+// ── AI GENERATE ──
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function pickN(arr,n){const s=[...arr];const r=[];while(r.length<n&&s.length){const i=Math.floor(Math.random()*s.length);r.push(s.splice(i,1)[0]);}return r;}
+
+async function aiGenerate(){
+  const btn=document.getElementById('ai-gen-btn');
+  const status=document.getElementById('ai-status');
+  const service=document.getElementById('ai-service').value;
+  const mood=document.getElementById('ai-mood').value;
+  const doTitle=document.getElementById('ai-title').checked;
+  const doTagline=document.getElementById('ai-tagline').checked;
+  const doDesc=document.getElementById('ai-desc').checked;
+  const doPalette=document.getElementById('ai-palette').checked;
+  const doOverlay=document.getElementById('ai-overlay').checked;
+  const doFrame=document.getElementById('ai-frame').checked;
+  const doCTA=document.getElementById('ai-cta').checked;
+  const doTextStyle=document.getElementById('ai-textstyle').checked;
+  btn.disabled=true;btn.textContent='⏳ Generating…';status.textContent='';
+  const moodPal={bold:['auto_dark','carbon_red','crimson','fire','sunset'],premium:['gold_black','titanium','chrome','desert','ice_silver'],clean:['white_clean','steel_blue','electric','midnight','ice_silver'],dark:['auto_dark','deep_space','neon_purple','midnight','racing_green'],bright:['electric','fire','rose_gold','lime_dark','neon_purple'],stealth:['auto_dark','carbon_red','chrome','titanium','deep_space'],sport:['carbon_red','auto_dark','steel_blue','racing_green','fire'],random:PALETTES.map(p=>p.id)};
+  const moodOv={bold:['diag_r','bottom','vign'],premium:['vign','bottom','cinematic'],clean:['vign','bottom'],dark:['full','vign','noir'],bright:['spotlight','golden','neon'],stealth:['full','noir','vign'],sport:['diag_r','bottom','vign'],random:OVS.map(o=>o.id)};
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:`You are a graphic designer for RewindPPF auto detailing shop in Calgary, AB.\nService: ${service}, Mood: ${mood}\nReturn ONLY valid JSON (no markdown):\n{"title_line1":"WORD","title_line2":"WORD","tagline":"Short punchy tagline under 60 chars","desc_line1":"**Bold** rest of line","desc_line2":"**Bold** rest","desc_line3":"**Bold** rest"}`}]})});
+    const data=await resp.json();const raw=data.content?.[0]?.text||'';const jm=raw.match(/\{[\s\S]*\}/);if(!jm)throw new Error('no json');const ai=JSON.parse(jm[0]);
+    if(doTitle&&ai.title_line1){document.getElementById('line1').value=ai.title_line1;document.getElementById('line2').value=ai.title_line2||'';}
+    if(doTagline&&ai.tagline)document.getElementById('tagline').value=ai.tagline;
+    if(doDesc&&ai.desc_line1)document.getElementById('desc').value=[ai.desc_line1,ai.desc_line2,ai.desc_line3].filter(Boolean).join('\n');
+    if(doPalette)applyPalette(pick(moodPal[mood]||moodPal.random));
+    if(doOverlay){const ovOpts=moodOv[mood]||moodOv.random;const count=mood==='clean'?2:Math.floor(Math.random()*2)+2;activeOvs=new Set(pickN(ovOpts,count));OVS.forEach(o=>document.getElementById('ov-'+o.id)?.classList.toggle('on',activeOvs.has(o.id)));document.getElementById('ov-int').value=mood==='clean'?45:mood==='dark'?75:60;}
+    if(doFrame){resetFrames();const chosen=pick(FRAMES.map(f=>f.id));const chosenSides=mood==='clean'?[pick(['T','B'])]:pickN(['T','R','B','L'],Math.floor(Math.random()*2)+1);chosenSides.forEach(s=>{frameState[chosen].sides.add(s);document.getElementById(`frs-${s}-${chosen}`)?.classList.add('on');});document.getElementById('fr-'+chosen)?.classList.add('on');}
+    if(doCTA){const chosen=mood==='premium'?pick(['solid_pill','gradient_btn']):mood==='clean'?pick(['outline_pill','text_only','double_line']):pick(CTA_STYLES.map(c=>c.id));activeCtaStyle=chosen;document.querySelectorAll('.cta-item').forEach(x=>x.classList.remove('on'));document.getElementById('ctai-'+chosen)?.classList.add('on');}
+    if(doTextStyle){const ts=pick(['normal','glow','shadow_l','shadow_r','normal','normal']);activeTxtStyle=ts;document.querySelectorAll('.ts-item').forEach(x=>x.classList.remove('on'));document.getElementById('tsi-'+ts)?.classList.add('on');}
+    updateDescSel(service);updateTaglineSel(service);draw();
+    status.textContent='✅ Generated! Tweak anything you like.';
+  }catch(err){
+    if(doPalette)applyPalette(pick(PALETTES.map(p=>p.id)));
+    if(doTagline)document.getElementById('tagline').value=pick(TAGLINES[service]||TAGLINES.default);
+    if(doDesc)document.getElementById('desc').value=pick(DESCS[service]||DESCS.general);
+    if(doTitle){const[a,b]=pick(TITLE_PRESETS);document.getElementById('line1').value=a;document.getElementById('line2').value=b;}
+    if(doOverlay){activeOvs=new Set(pickN(OVS.map(o=>o.id),2));OVS.forEach(o=>document.getElementById('ov-'+o.id)?.classList.toggle('on',activeOvs.has(o.id)));}
+    if(doCTA){activeCtaStyle=pick(CTA_STYLES.map(c=>c.id));document.querySelectorAll('.cta-item').forEach(x=>x.classList.remove('on'));document.getElementById('ctai-'+activeCtaStyle)?.classList.add('on');}
+    draw();status.textContent='⚠️ Using smart random (AI offline).';
+  }
+  btn.disabled=false;btn.textContent='✨ Generate Random Combo';
+}
 
 // ════════════════════════════════════════════════
 // INIT UI
@@ -508,14 +712,63 @@ function setStep(n,[s1,s2,s3]=[`br-step1`,`br-step2`,`br-step3`]){[s1,s2,s3].for
   FRAMES.forEach(f=>{const d=document.createElement('div');d.className='fr-item';d.id='fr-'+f.id;const ic=getFrameColor(f.id);d.innerHTML=`<div class="fr-name">${f.name}</div><div class="fr-cr"><label>Colour</label><input type="color" value="${ic}" id="frc-${f.id}" style="width:32px;height:20px;padding:1px 2px" oninput="onFrameColorManual('${f.id}',this.value)"><span id="frsrc-${f.id}" class="fr-src">default</span><button class="btn-sm" onclick="clearFrameManual('${f.id}')" title="Reset to palette" style="font-size:9px;padding:2px 5px">↺</button></div><div class="fr-sides"><button id="frs-T-${f.id}" onclick="toggleFS('${f.id}','T')">▲T</button><button id="frs-R-${f.id}" onclick="toggleFS('${f.id}','R')">▶R</button><button id="frs-B-${f.id}" onclick="toggleFS('${f.id}','B')">▼B</button><button id="frs-L-${f.id}" onclick="toggleFS('${f.id}','L')">◀L</button></div>`;fg.appendChild(d);});
   // Text styles
   const tsg=document.getElementById('ts-grid');
-  TEXT_STYLES.forEach(ts=>{const d=document.createElement('div');d.className='ts-item'+(ts.id===activeTxtStyle?' on':'');d.id='tsi-'+ts.id;d.innerHTML=`<span style="font-size:12px;display:block">Aa</span>${ts.label}`;d.onclick=()=>{activeTxtStyle=ts.id;document.querySelectorAll('.ts-item').forEach(x=>x.classList.remove('on'));d.classList.add('on');draw();};tsg.appendChild(d);});
+  TEXT_STYLES.forEach(ts=>{const d=document.createElement('div');d.className='ts-item'+(ts.id===activeTxtStyle?' on':'');d.id='tsi-'+ts.id;d.innerHTML=`<span class="ts-aa">Aa</span>${ts.label}`;d.onclick=()=>{activeTxtStyle=ts.id;document.querySelectorAll('.ts-item').forEach(x=>x.classList.remove('on'));d.classList.add('on');draw();};tsg.appendChild(d);});
   // CTA
   const cg=document.getElementById('cta-grid');
   CTA_STYLES.forEach(cs=>{const d=document.createElement('div');d.className='cta-item'+(cs.id===activeCtaStyle?' on':'');d.id='ctai-'+cs.id;d.textContent=cs.label;d.onclick=()=>{activeCtaStyle=cs.id;document.querySelectorAll('.cta-item').forEach(x=>x.classList.remove('on'));d.classList.add('on');draw();};cg.appendChild(d);});
   // Range sliders display update
   [['bg-bright','bb-val','%'],['title-spacing','sp-val','px'],['txt-shadow','tsh-val',''],['txt-outline','tol-val',''],['ov-int','ov-val','%']].forEach(([id,vid,sfx])=>{const el=document.getElementById(id);if(el)el.addEventListener('input',()=>{document.getElementById(vid).textContent=el.value+sfx;});});
+  goStep(0);
   draw();
 })();
+
+// ── RESIZABLE SIDEBAR DIVIDER ──
+(function(){
+  const divider=document.getElementById('divider');
+  const sidebar=document.getElementById('sidebar');
+  const body=document.querySelector('.body');
+  if(!divider||!sidebar)return;
+  let dragging=false,startX=0,startW=0;
+  divider.addEventListener('mousedown',e=>{
+    dragging=true;startX=e.clientX;startW=sidebar.offsetWidth;
+    divider.classList.add('dragging');
+    document.body.style.cursor='col-resize';
+    document.body.style.userSelect='none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const dx=e.clientX-startX;
+    const newW=Math.max(220,Math.min(startW+dx,body.offsetWidth*0.75));
+    sidebar.style.width=newW+'px';
+  });
+  document.addEventListener('mouseup',()=>{
+    if(!dragging)return;
+    dragging=false;divider.classList.remove('dragging');
+    document.body.style.cursor='';document.body.style.userSelect='';
+  });
+  // Touch support
+  divider.addEventListener('touchstart',e=>{
+    const t=e.touches[0];dragging=true;startX=t.clientX;startW=sidebar.offsetWidth;e.preventDefault();
+  },{passive:false});
+  document.addEventListener('touchmove',e=>{
+    if(!dragging)return;const t=e.touches[0];
+    const dx=t.clientX-startX;
+    const newW=Math.max(220,Math.min(startW+dx,body.offsetWidth*0.75));
+    sidebar.style.width=newW+'px';
+  });
+  document.addEventListener('touchend',()=>{dragging=false;});
+  // Set default sidebar to ~35% of viewport
+  sidebar.style.width=Math.min(380,Math.round(window.innerWidth*0.35))+'px';
+})();
+
+// ── ZOOM CONTROL ──
+function setZoom(val){
+  val=parseInt(val);
+  document.getElementById('zoom-slider').value=val;
+  document.getElementById('zoom-val').textContent=val+'%';
+  document.getElementById('canvas-sizer').style.width=val+'%';
+}
 
 function updateTaglineSel(key){const sel=document.getElementById('tagline-sel');sel.innerHTML='<option value="">— select preset —</option>';const list=[...(TAGLINES[key]||[]),...(key!=='default'?TAGLINES.default:[])];list.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t.length>44?t.slice(0,42)+'…':t;sel.appendChild(o);});}
 function updateDescSel(key){const sel=document.getElementById('desc-sel');sel.innerHTML='<option value="">— select preset —</option>';const list=DESCS[key]||DESCS.general;list.forEach((d,i)=>{const o=document.createElement('option');o.value=key+'||'+i;const clean=d.replace(/\*\*/g,'');o.textContent=(i+1)+'. '+clean.split('\n')[0].slice(0,30)+'…';sel.appendChild(o);});}
@@ -707,6 +960,9 @@ let brImage=null,brResult=null,brSampledColor=null,brMethod='color',brIsProcessi
 // Sliders display
 [['br-tol','br-tol-val',''],['br-feather','br-feath-val','px'],['br-sens','br-sens-val',''],['br-efeather','br-efeath-val','px']].forEach(([id,vid,sfx])=>{const el=document.getElementById(id);if(el)el.addEventListener('input',()=>{const v=document.getElementById(vid);if(v)v.textContent=el.value+sfx;});});
 
+function getFrameColor(id){const fs=frameState[id];if(fs.manualColor)return fs.manualColor;if(activePalId){const p=PALETTES.find(x=>x.id===activePalId);if(p){const idx=FRAME_PAL_ROLE[id]??2;return p.sw[idx]||p.sw[2];}}return FRAMES.find(f=>f.id===id)?.defColor||'#FF2020';}
+function syncFramePickerUI(id){const c=getFrameColor(id);const inp=document.getElementById('frc-'+id);const src=document.getElementById('frsrc-'+id);if(inp)inp.value=c;if(src){const m=!!frameState[id].manualColor;src.textContent=m?'manual':'palette';src.className='fr-src'+(m?' manual':'');}}
+function brSetStep(n){['br-step1','br-step2','br-step3'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.className='br-step'+(i+1<n?' done':i+1===n?' active':'');});}
 function brSetMethod(m){
   brMethod=m;
   ['color','edge'].forEach(x=>{document.getElementById('brm-'+x).classList.toggle('on',x===m);document.getElementById('br-opts-'+x).style.display=x===m?'block':'none';});
@@ -733,7 +989,7 @@ function brLoad(input){
       oc.onclick=brOnCanvasClick;oc.style.cursor='crosshair';
       document.getElementById('br-controls').style.display='block';
       document.getElementById('br-upload').style.display='none';
-      setStep(2,['br-step1','br-step2','br-step3']);
+      brSetStep(2);
       brShowStatus('Photo loaded. Click on background area in Original image to sample colour, then click Remove Background.','info');
     };
     img.src=e.target.result;
@@ -787,7 +1043,7 @@ async function brRemove(preview=false){
     if(!preview){
       brShowStatus('✅ Background removed! Use the buttons below.','success');
       document.getElementById('br-after-btns').style.display='block';
-      setStep(3,['br-step1','br-step2','br-step3']);
+      brSetStep(3);
     }
   }catch(err){brShowStatus('Error: '+err.message,'err');}
   brIsProcessing=false;
@@ -831,7 +1087,7 @@ function brUseInPoster(){
   if(!brResult)return;
   const dataUrl=brResult.canvas.toDataURL('image/png');
   const img=new Image();
-  img.onload=()=>{bgImg=img;document.getElementById('bg-lbl').textContent='✓ BG-removed photo loaded';draw();switchTab('poster');brShowStatus('✅ Applied to poster! Switch to the Poster tab to see it.','success');};
+  img.onload=()=>{bgImg=img;document.getElementById('bg-lbl').textContent='✓ BG-removed photo loaded';draw();switchMode('poster');brShowStatus('✅ Applied! Go to Poster tab.','success');};
   img.src=dataUrl;
 }
 
@@ -850,9 +1106,10 @@ function brReset(){
   document.getElementById('br-click-hint').textContent='👆 Click on a background area in the Original preview to sample its colour';
   document.getElementById('br-click-hint').style.color='var(--info)';
   document.getElementById('br-click-hint').style.background='var(--info-bg)';
-  setStep(1,['br-step1','br-step2','br-step3']);
+  brSetStep(1);
   document.getElementById('br-status').classList.remove('show');
 }
 </script>
+
 </body>
 </html>
